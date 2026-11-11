@@ -22,3 +22,4 @@ class Branch(Base, TimestampMixin):
     # Relationships
     organization = relationship("Organization", back_populates="branches")
     user_accesses = relationship("UserBranchAccess", back_populates="branch", cascade="all, delete-orphan")
+

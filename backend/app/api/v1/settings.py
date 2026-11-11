@@ -75,3 +75,4 @@ def update_general_settings(
     )
 
     return get_general_settings(current_user, db)
+

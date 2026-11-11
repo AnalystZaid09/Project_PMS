@@ -136,10 +136,10 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
         {!isCollapsed && (
           <div className="flex items-center space-x-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-lg shadow">
-              P
+              A
             </div>
             <div>
-              <span className="font-semibold text-white tracking-tight">Nexus PMS</span>
+              <span className="font-semibold text-white tracking-tight">Apex PMS</span>
               <p className="text-[10px] text-slate-400">Healthcare Management</p>
             </div>
           </div>
@@ -245,3 +245,4 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
     </aside>
   );
 };
+

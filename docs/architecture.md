@@ -51,3 +51,4 @@ The Patient Management System is architected as a modular monolith. It provides 
 - **Zero AI Diagnosis Rule:** In accordance with clinical safety guidelines, AI models are never permitted to autonomously diagnose conditions, prescribe medications, or finalize medical reports.
 - **Report Immutability:** Once a report is finalized by an authorized reviewer, the underlying database record is locked. Subsequent edits generate an amended version (`report_versions`) that logs the amendment author, timestamp, and clinical justification.
 - **Safe Audit Logging:** All state changes (login, patient registration, payment creation, report status transitions) trigger asynchronous or inline writes to `audit_logs` capturing user ID, IP address, action, and JSON diffs, excluding sensitive credentials.
+

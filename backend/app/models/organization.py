@@ -25,3 +25,4 @@ class Organization(Base, TimestampMixin):
     branches = relationship("Branch", back_populates="organization", cascade="all, delete-orphan")
     users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
     roles = relationship("Role", back_populates="organization", cascade="all, delete-orphan")
+

@@ -129,3 +129,4 @@ def require_branch_access(branch_id: str, current_user: AuthenticatedUserContext
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Cross-branch access denied. You are not authorized for branch '{branch_id}'.",
         )
+

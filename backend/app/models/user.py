@@ -49,3 +49,4 @@ class User(Base, TimestampMixin):
     user_roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
     branch_accesses = relationship("UserBranchAccess", back_populates="user", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="user")
+

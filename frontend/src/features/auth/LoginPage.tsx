@@ -44,7 +44,7 @@ export const LoginPage: React.FC = () => {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-500/20 mb-4">
             <ShieldCheck className="h-8 w-8" />
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Nexus PMS</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Apex Health PMS</h2>
           <p className="text-sm text-slate-500 mt-1">Sign in to your clinical management portal</p>
         </div>
 
@@ -107,7 +107,7 @@ export const LoginPage: React.FC = () => {
               className="rounded-lg border border-slate-200 p-2 text-left hover:bg-slate-50 transition-colors"
             >
               <div className="font-semibold text-slate-800">Admin</div>
-              <div className="text-[10px] text-slate-500">Sampada Y. (Full Admin)</div>
+              <div className="text-[10px] text-slate-500">Sarah Jenkins (Full Admin)</div>
             </button>
             <button
               type="button"
@@ -115,15 +115,15 @@ export const LoginPage: React.FC = () => {
               className="rounded-lg border border-slate-200 p-2 text-left hover:bg-slate-50 transition-colors"
             >
               <div className="font-semibold text-slate-800">Receptionist</div>
-              <div className="text-[10px] text-slate-500">Neha Patel (Front Desk)</div>
+              <div className="text-[10px] text-slate-500">Emily Watson (Front Desk)</div>
             </button>
             <button
               type="button"
-              onClick={() => handleQuickLogin("drgaur")}
+              onClick={() => handleQuickLogin("drmarcus")}
               className="rounded-lg border border-slate-200 p-2 text-left hover:bg-slate-50 transition-colors"
             >
               <div className="font-semibold text-slate-800">Reporting Doctor</div>
-              <div className="text-[10px] text-slate-500">Dr. CP Gaur (Reviewer)</div>
+              <div className="text-[10px] text-slate-500">Dr. Marcus Vance (Reviewer)</div>
             </button>
             <button
               type="button"
@@ -131,7 +131,7 @@ export const LoginPage: React.FC = () => {
               className="rounded-lg border border-slate-200 p-2 text-left hover:bg-slate-50 transition-colors"
             >
               <div className="font-semibold text-slate-800">Accountant</div>
-              <div className="text-[10px] text-slate-500">Naseha I. (Finance)</div>
+              <div className="text-[10px] text-slate-500">David Miller (Finance)</div>
             </button>
           </div>
           <p className="text-[11px] text-slate-400 text-center mt-3">

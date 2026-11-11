@@ -16,3 +16,4 @@ class SystemSettingResponse(BaseModel):
     currency_symbol: str = "₹"
     timezone: str = "Asia/Kolkata"
     date_format: str = "DD/MM/YYYY"
+

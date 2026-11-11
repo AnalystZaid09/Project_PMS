@@ -245,3 +245,4 @@ class FinancialRegister(Base, TimestampMixin):
     reference_id = Column(String(36), nullable=True)
     description = Column(Text, nullable=True)
     created_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+

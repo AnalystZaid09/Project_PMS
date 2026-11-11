@@ -153,3 +153,4 @@ def toggle_branch_status(
         changes={"is_active": branch.is_active}
     )
     return branch
+

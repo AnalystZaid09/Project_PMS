@@ -20,3 +20,4 @@ def health_check(db: Session = Depends(get_db)):
         "service": "PMS API Backend",
         "version": "1.0.0"
     }
+

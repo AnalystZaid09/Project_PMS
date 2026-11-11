@@ -43,3 +43,4 @@ def test_admin_allowed_on_roles(client, admin_token):
     assert response.status_code == 200
     data = response.json()
     assert len(data) >= 5
+

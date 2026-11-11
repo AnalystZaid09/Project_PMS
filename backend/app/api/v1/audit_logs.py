@@ -44,3 +44,4 @@ def list_audit_logs(
             created_at=log.created_at,
         ) for log, user_name in results
     ]
+

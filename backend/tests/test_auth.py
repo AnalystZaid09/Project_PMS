@@ -59,3 +59,4 @@ def test_change_password(client, admin_token):
             "new_password": "Admin@123"
         }
     )
+

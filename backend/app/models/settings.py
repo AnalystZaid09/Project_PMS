@@ -12,3 +12,4 @@ class SystemSetting(Base, TimestampMixin):
     setting_value = Column(Text, nullable=True)
     category = Column(String(50), default="general", nullable=False)
     description = Column(Text, nullable=True)
+

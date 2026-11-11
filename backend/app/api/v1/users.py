@@ -242,3 +242,4 @@ def toggle_user_status(
         changes={"is_active": user.is_active}
     )
     return format_user_response(user, db)
+

@@ -229,3 +229,4 @@ export const PermissionsPage: React.FC = () => {
     </div>
   );
 };
+

@@ -122,7 +122,7 @@ def login(login_data: LoginRequest, request: Request, db: Session = Depends(get_
     access_token = create_access_token(subject=user.id, claims=token_claims)
 
     org = db.query(Organization).filter(Organization.id == user.organization_id).first()
-    org_name = org.name if org else "Nexus Health"
+    org_name = org.name if org else "Apex Health Diagnostics"
 
     # Log successful login audit
     log_audit_event(
@@ -165,7 +165,7 @@ def get_current_user_profile(
 ):
     user = current_user.user
     org = db.query(Organization).filter(Organization.id == user.organization_id).first()
-    org_name = org.name if org else "Nexus Health"
+    org_name = org.name if org else "Apex Health Diagnostics"
 
     user_branch_records = db.query(Branch, UserBranchAccess.is_default).join(
         UserBranchAccess, UserBranchAccess.branch_id == Branch.id
@@ -299,3 +299,4 @@ def logout(
         entity_id=current_user.id,
     )
     return {"message": "Logged out successfully."}
+

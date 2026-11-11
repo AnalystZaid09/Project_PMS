@@ -43,3 +43,4 @@ def test_create_and_toggle_branch(client, admin_token):
     )
     assert toggle_res.status_code == 200
     assert toggle_res.json()["is_active"] is False
+

@@ -21,7 +21,7 @@ export const Header: React.FC<{ isSidebarCollapsed: boolean }> = ({ isSidebarCol
       {/* Left side spacer / title */}
       <div className="flex items-center space-x-4">
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          {user?.organization_name || "Nexus Health PMS"}
+          {user?.organization_name || "Apex Health PMS"}
         </span>
       </div>
 
@@ -138,3 +138,4 @@ export const Header: React.FC<{ isSidebarCollapsed: boolean }> = ({ isSidebarCol
     </header>
   );
 };
+

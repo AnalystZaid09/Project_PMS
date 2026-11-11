@@ -77,32 +77,41 @@ PERMISSIONS_DEFINITION = [
 
 
 def seed_database(db: Session):
-    # 1. Organization
-    org = db.query(Organization).filter(Organization.code == "NEXUS").first()
+    # 1. Organization - Fresh company identity
+    org = db.query(Organization).filter(Organization.code == "APEX").first()
     if not org:
-        org = Organization(
-            name="Nexus Health Diagnostics",
-            code="NEXUS",
-            contact_email="admin@nexushealth.org",
-            contact_phone="+91 265 2345678",
-            website="https://nexushealth.org",
-            currency_code="INR",
-            currency_symbol="₹",
-            timezone="Asia/Kolkata",
-            date_format="DD/MM/YYYY",
-            is_active=True,
-        )
-        db.add(org)
+        # Also clean up any legacy organization record if exists
+        old_org = db.query(Organization).filter(Organization.code == "NEXUS").first()
+        if old_org:
+            old_org.code = "APEX"
+            old_org.name = "Apex Health Diagnostics"
+            old_org.contact_email = "contact@apexhealth.org"
+            old_org.website = "https://apexhealth.org"
+            org = old_org
+        else:
+            org = Organization(
+                name="Apex Health Diagnostics",
+                code="APEX",
+                contact_email="contact@apexhealth.org",
+                contact_phone="+91 265 2500000",
+                website="https://apexhealth.org",
+                currency_code="INR",
+                currency_symbol="₹",
+                timezone="Asia/Kolkata",
+                date_format="DD/MM/YYYY",
+                is_active=True,
+            )
+            db.add(org)
         db.commit()
         db.refresh(org)
 
-    # 2. Branches
+    # 2. Branches - Completely new, modern facility names
     branches_data = [
-        ("1", "1. Medicare Imaging Centre", "India", "Gujarat", "Vadodara", "+91 265 210001", "vadodara@nexushealth.org"),
-        ("2", "2. Med Eva Diagnostic Centre", "India", "Gujarat", "Halol", "+91 267 210002", "halol@nexushealth.org"),
-        ("8", "3. Medicare Kampala Diagnostic Centre", "Uganda", "Central", "Deuba", "+256 41 410008", "kampala@nexushealth.org"),
-        ("10", "4. Amic Medicare Diagnostic Centre", "Ghana", "Central", "Cape Coast", "+233 33 210010", "ghana@nexushealth.org"),
-        ("12", "5. Alfamed Diagnostic Centre", "Kenya", "Coast", "Mombasa", "+254 41 210012", "mombasa@nexushealth.org"),
+        ("1", "1. Apex Central Diagnostic Hospital", "India", "Gujarat", "Vadodara", "+91 265 2500001", "central@apexhealth.org"),
+        ("2", "2. Apex Westside Imaging Centre", "India", "Gujarat", "Halol", "+91 267 2500002", "westside@apexhealth.org"),
+        ("8", "3. Apex Kampala Medical Centre", "Uganda", "Central", "Kampala", "+256 41 5500008", "kampala@apexhealth.org"),
+        ("10", "4. Apex Atlantic Diagnostic Centre", "Ghana", "Central", "Cape Coast", "+233 33 5500010", "atlantic@apexhealth.org"),
+        ("12", "5. Apex Coastal Health Facility", "Kenya", "Coast", "Mombasa", "+254 41 5500012", "coastal@apexhealth.org"),
     ]
 
     branches = {}
@@ -121,8 +130,15 @@ def seed_database(db: Session):
                 is_active=True,
             )
             db.add(b)
-            db.commit()
-            db.refresh(b)
+        else:
+            b.name = name
+            b.country = country
+            b.state = state
+            b.city = city
+            b.phone = phone
+            b.email = email
+        db.commit()
+        db.refresh(b)
         branches[code] = b
 
     default_branch = branches["1"]
@@ -189,14 +205,14 @@ def seed_database(db: Session):
         db.commit()
         roles[slug] = r
 
-    # 5. Synthetic Users
+    # 5. Synthetic Users - Distinct, professional personas with zero legacy company references
     users_data = [
-        ("superadmin", "superadmin@nexushealth.org", "System Superadmin", True, ["super-admin"], list(branches.values())),
-        ("admin", "admin@nexushealth.org", "Sampada Yeshvikar", False, ["admin"], list(branches.values())),
-        ("receptionist", "receptionist@nexushealth.org", "Neha Patel", False, ["receptionist"], [branches["1"], branches["2"]]),
-        ("drgaur", "drgaur@nexushealth.org", "Dr. Chandraprakash Gaur", False, ["reporting-doctor"], list(branches.values())),
-        ("accountant", "naseha@nexushealth.org", "Naseha Imroze", False, ["accountant"], [branches["1"]]),
-        ("writer", "darshan@nexushealth.org", "Darshan Kandoi", False, ["report-writer"], [branches["1"], branches["2"]]),
+        ("superadmin", "superadmin@apexhealth.org", "Global System Admin", True, ["super-admin"], list(branches.values())),
+        ("admin", "sarah.jenkins@apexhealth.org", "Sarah Jenkins", False, ["admin"], list(branches.values())),
+        ("receptionist", "emily.watson@apexhealth.org", "Emily Watson", False, ["receptionist"], [branches["1"], branches["2"]]),
+        ("drmarcus", "dr.vance@apexhealth.org", "Dr. Marcus Vance, MD", False, ["reporting-doctor"], list(branches.values())),
+        ("accountant", "david.miller@apexhealth.org", "David Miller", False, ["accountant"], [branches["1"]]),
+        ("writer", "alex.rivera@apexhealth.org", "Alex Rivera", False, ["report-writer"], [branches["1"], branches["2"]]),
     ]
 
     pw_hash = get_password_hash(DEFAULT_PASSWORD)
@@ -230,19 +246,26 @@ def seed_database(db: Session):
                 db.add(uba)
 
             db.commit()
+        else:
+            # Update existing record to new names
+            u.full_name = full_name
+            u.email = email
+            db.commit()
 
     # 6. General system settings
     settings_data = [
-        ("app_name", "Nexus Health PMS", "general", "Application display title"),
+        ("app_name", "Apex Health PMS", "general", "Application display title"),
         ("app_logo", "", "general", "URL to company logo"),
         ("app_favicon", "", "general", "URL to company favicon"),
-        ("patient_id_prefix", "PAT", "numbering", "Patient UHID prefix"),
-        ("case_id_prefix", "CAS", "numbering", "Case encounter prefix"),
-        ("invoice_id_prefix", "INV", "numbering", "Invoice receipt prefix"),
+        ("patient_id_prefix", "APX-PAT", "numbering", "Patient UHID prefix"),
+        ("case_id_prefix", "APX-CAS", "numbering", "Case encounter prefix"),
+        ("invoice_id_prefix", "APX-INV", "numbering", "Invoice receipt prefix"),
     ]
     for key, val, cat, desc in settings_data:
         s = db.query(SystemSetting).filter(SystemSetting.organization_id == org.id, SystemSetting.setting_key == key).first()
         if not s:
             s = SystemSetting(organization_id=org.id, setting_key=key, setting_value=val, category=cat, description=desc)
             db.add(s)
+        else:
+            s.setting_value = val
     db.commit()

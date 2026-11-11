@@ -189,3 +189,4 @@ Immutable audit trail for compliance, forensic tracing, and security.
 - **`invoices`**: `id`, `organization_id`, `branch_id`, `case_id`, `invoice_number`, `subtotal`, `discount_total`, `tax_total`, `grand_total`, `paid_amount`, `outstanding_balance`, `payment_status` (`unpaid`, `partial`, `paid`, `refunded`)
 - **`payments`**: `id`, `invoice_id`, `organization_id`, `branch_id`, `receipt_number`, `amount`, `payment_mode` (`cash`, `upi`, `card`, `bank_transfer`), `reference_number`, `collected_by_id`, `created_at`
 - **`financial_registers`**: `id`, `organization_id`, `branch_id`, `register_type` (`case`, `bank`, `expense`, `petty_cash`, `date_wise`), `amount`, `direction` (`credit`, `debit`), `reference_type`, `reference_id`, `description`, `created_by_id`, `created_at`
+

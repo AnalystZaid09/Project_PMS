@@ -41,3 +41,4 @@ This document tracks clinical, operational, and regulatory questions that requir
 - **Question:** What is the statutory medical record retention period (e.g., 3 years for outpatient, 7 years for diagnostic reports, 18 years for minors under certain regulations)?
 - **Question:** Who has authorization to permanently delete or anonymize patient data upon request?
 - **Current Default:** Soft deletion only (`is_active = false`), append-only audit logs, and private access-controlled document storage. No operational records are physically dropped from the database.
+

@@ -11,3 +11,4 @@ api_router.include_router(roles.router)
 api_router.include_router(permissions.router)
 api_router.include_router(settings.router)
 api_router.include_router(audit_logs.router)
+

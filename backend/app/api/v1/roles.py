@@ -94,3 +94,4 @@ def update_role_permissions(
         changes={"permission_count": len(perms)}
     )
     return role
+

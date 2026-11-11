@@ -40,3 +40,4 @@ def log_audit_event(
         logger.error(f"Failed to record audit log for action {action}: {e}")
         db.rollback()
         return None
+

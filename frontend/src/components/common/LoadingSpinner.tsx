@@ -9,3 +9,4 @@ export const LoadingSpinner: React.FC<{ message?: string }> = ({ message = "Load
     </div>
   );
 };
+

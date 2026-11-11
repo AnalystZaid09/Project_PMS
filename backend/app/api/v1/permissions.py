@@ -15,3 +15,4 @@ def list_all_permissions(
     db: Session = Depends(get_db)
 ):
     return db.query(Permission).order_by(Permission.module.asc(), Permission.action.asc()).all()
+
