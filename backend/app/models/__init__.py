@@ -6,8 +6,9 @@ from app.models.user import User, UserRole, UserBranchAccess
 from app.models.audit import AuditLog
 from app.models.settings import SystemSetting
 from app.models.schema_all import (
-    Department, City, PatientCategory, DoctorCategory, Doctor,
+    Department, City, PatientCategory, DoctorCategory, Doctor, DoctorInvestigationRate,
     InvestigationCategory, Investigation, InvestigationBranchPrice,
+    OtherChargeType, EmailTemplate,
     Patient, Case, CaseItem, ReportTemplate, ClinicalReport, ReportVersion,
     Invoice, Payment, FinancialRegister
 )
@@ -30,9 +31,12 @@ __all__ = [
     "PatientCategory",
     "DoctorCategory",
     "Doctor",
+    "DoctorInvestigationRate",
     "InvestigationCategory",
     "Investigation",
     "InvestigationBranchPrice",
+    "OtherChargeType",
+    "EmailTemplate",
     "Patient",
     "Case",
     "CaseItem",

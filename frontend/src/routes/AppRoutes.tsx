@@ -9,6 +9,17 @@ import { PermissionsPage } from "@/features/admin/roles/PermissionsPage";
 import { BranchesPage } from "@/features/admin/branches/BranchesPage";
 import { SettingsPage } from "@/features/admin/settings/SettingsPage";
 import { AuditLogsPage } from "@/features/admin/audit/AuditLogsPage";
+import { DepartmentsPage } from "@/features/masters/DepartmentsPage";
+import { CitiesPage } from "@/features/masters/CitiesPage";
+import { PatientCategoriesPage } from "@/features/masters/PatientCategoriesPage";
+import { DoctorCategoriesPage } from "@/features/masters/DoctorCategoriesPage";
+import { DoctorsPage } from "@/features/masters/DoctorsPage";
+import { DoctorRatesPage } from "@/features/masters/DoctorRatesPage";
+import { InvestigationsPage } from "@/features/masters/InvestigationsPage";
+import { InvestigationChargesPage } from "@/features/masters/InvestigationChargesPage";
+import { OtherChargesPage } from "@/features/masters/OtherChargesPage";
+import { EmailTemplatesPage } from "@/features/masters/EmailTemplatesPage";
+import { ReportTemplatesPage } from "@/features/masters/ReportTemplatesPage";
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -41,6 +52,42 @@ export const AppRoutes: React.FC = () => {
 
           <Route element={<ProtectedRoute requiredPermission="audit_logs:view" />}>
             <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+          </Route>
+
+          {/* Master Data Routes */}
+          <Route element={<ProtectedRoute requiredPermission="department_master:view" />}>
+            <Route path="/masters/departments" element={<DepartmentsPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="city_master:view" />}>
+            <Route path="/masters/cities" element={<CitiesPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="patient_category_master:view" />}>
+            <Route path="/masters/patient-categories" element={<PatientCategoriesPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="doctor_category_master:view" />}>
+            <Route path="/masters/doctor-categories" element={<DoctorCategoriesPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="doctor_master:view" />}>
+            <Route path="/masters/doctors" element={<DoctorsPage />} />
+            <Route path="/masters/doctor-rates" element={<DoctorRatesPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="investigation_master:view" />}>
+            <Route path="/masters/investigations" element={<InvestigationsPage />} />
+            <Route path="/masters/investigation-charges" element={<InvestigationChargesPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="other_charges_master:view" />}>
+            <Route path="/masters/other-charges" element={<OtherChargesPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="template_master:view" />}>
+            <Route path="/masters/email-templates" element={<EmailTemplatesPage />} />
+            <Route path="/masters/report-templates" element={<ReportTemplatesPage />} />
           </Route>
         </Route>
       </Route>

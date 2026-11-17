@@ -41,3 +41,29 @@ def log_audit_event(
         db.rollback()
         return None
 
+
+def log_audit_action(
+    db: Session,
+    user: Any,
+    action: str,
+    entity_type: str,
+    entity_id: Optional[str] = None,
+    old_data: Optional[Dict[str, Any]] = None,
+    new_data: Optional[Dict[str, Any]] = None,
+) -> Optional[AuditLog]:
+    changes = {}
+    if old_data:
+        changes["before"] = old_data
+    if new_data:
+        changes["after"] = new_data
+    return log_audit_event(
+        db=db,
+        organization_id=getattr(user, "organization_id", None),
+        branch_id=getattr(user, "default_branch_id", None),
+        user_id=getattr(user, "id", None),
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        changes=changes or None,
+    )
+

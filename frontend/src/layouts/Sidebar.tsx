@@ -67,9 +67,9 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
       icon: Stethoscope,
       permission: "investigation_master:view",
       children: [
-        { title: "Investigation Catalogue", href: "/investigations", permission: "investigation_master:view" },
-        { title: "Investigation Charges", href: "/investigation-charges", permission: "investigation_master:view" },
-        { title: "Report Templates", href: "/report-templates", permission: "investigation_master:view" },
+        { title: "Investigation Catalogue", href: "/masters/investigations", permission: "investigation_master:view" },
+        { title: "Investigation Charges", href: "/masters/investigation-charges", permission: "investigation_master:view" },
+        { title: "Report Templates", href: "/masters/report-templates", permission: "template_master:view" },
       ],
     },
     {
@@ -109,7 +109,13 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
       children: [
         { title: "Branches", href: "/admin/branches", permission: "branch_master:view" },
         { title: "Departments", href: "/masters/departments", permission: "department_master:view" },
-        { title: "Doctors", href: "/masters/doctors", permission: "doctor_master:view" },
+        { title: "Cities / Locations", href: "/masters/cities", permission: "city_master:view" },
+        { title: "Patient Categories", href: "/masters/patient-categories", permission: "patient_category_master:view" },
+        { title: "Doctor Categories", href: "/masters/doctor-categories", permission: "doctor_category_master:view" },
+        { title: "Doctors Master", href: "/masters/doctors", permission: "doctor_master:view" },
+        { title: "Doctor Tariff Charts", href: "/masters/doctor-rates", permission: "doctor_master:view" },
+        { title: "Other Charge Types", href: "/masters/other-charges", permission: "other_charges_master:view" },
+        { title: "Email Templates", href: "/masters/email-templates", permission: "template_master:view" },
       ],
     },
     {

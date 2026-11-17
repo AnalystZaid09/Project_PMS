@@ -1,3 +1,4 @@
+from decimal import Decimal
 from sqlalchemy.orm import Session
 from app.core.security import get_password_hash
 from app.models.organization import Organization
@@ -5,6 +6,11 @@ from app.models.branch import Branch
 from app.models.role import Role, Permission, role_permissions
 from app.models.user import User, UserRole, UserBranchAccess
 from app.models.settings import SystemSetting
+from app.models.schema_all import (
+    Department, City, PatientCategory, DoctorCategory, Doctor, DoctorInvestigationRate,
+    InvestigationCategory, Investigation, InvestigationBranchPrice,
+    OtherChargeType, EmailTemplate, ReportTemplate
+)
 
 DEFAULT_PASSWORD = "Admin@123"
 
@@ -55,14 +61,42 @@ PERMISSIONS_DEFINITION = [
     ("department_master", "view", "department_master:view", "View departments"),
     ("department_master", "add", "department_master:add", "Add departments"),
     ("department_master", "update", "department_master:update", "Edit departments"),
+    ("department_master", "delete", "department_master:delete", "Deactivate/delete departments"),
+
+    ("city_master", "view", "city_master:view", "View cities/locations"),
+    ("city_master", "add", "city_master:add", "Add cities/locations"),
+    ("city_master", "update", "city_master:update", "Edit cities/locations"),
+    ("city_master", "delete", "city_master:delete", "Deactivate/delete cities"),
+
+    ("patient_category_master", "view", "patient_category_master:view", "View patient categories"),
+    ("patient_category_master", "add", "patient_category_master:add", "Add patient categories"),
+    ("patient_category_master", "update", "patient_category_master:update", "Edit patient categories"),
+    ("patient_category_master", "delete", "patient_category_master:delete", "Deactivate/delete patient categories"),
+
+    ("doctor_category_master", "view", "doctor_category_master:view", "View doctor categories"),
+    ("doctor_category_master", "add", "doctor_category_master:add", "Add doctor categories"),
+    ("doctor_category_master", "update", "doctor_category_master:update", "Edit doctor categories"),
+    ("doctor_category_master", "delete", "doctor_category_master:delete", "Deactivate/delete doctor categories"),
 
     ("doctor_master", "view", "doctor_master:view", "View doctors"),
     ("doctor_master", "add", "doctor_master:add", "Add referring/reporting doctors"),
     ("doctor_master", "update", "doctor_master:update", "Edit doctors"),
+    ("doctor_master", "delete", "doctor_master:delete", "Deactivate/delete doctors"),
 
     ("investigation_master", "view", "investigation_master:view", "View investigation catalogue"),
     ("investigation_master", "add", "investigation_master:add", "Add investigations"),
     ("investigation_master", "update", "investigation_master:update", "Edit investigations & prices"),
+    ("investigation_master", "delete", "investigation_master:delete", "Deactivate/delete investigations"),
+
+    ("other_charges_master", "view", "other_charges_master:view", "View other charge types"),
+    ("other_charges_master", "add", "other_charges_master:add", "Add other charge types"),
+    ("other_charges_master", "update", "other_charges_master:update", "Edit other charge types"),
+    ("other_charges_master", "delete", "other_charges_master:delete", "Deactivate/delete other charge types"),
+
+    ("template_master", "view", "template_master:view", "View email and report templates"),
+    ("template_master", "add", "template_master:add", "Add email and report templates"),
+    ("template_master", "update", "template_master:update", "Edit email and report templates"),
+    ("template_master", "delete", "template_master:delete", "Deactivate/delete templates"),
 
     # Financial registers
     ("financial_registers", "view", "financial_registers:view", "View financial registers (bank, case, expense, petty cash)"),
@@ -268,4 +302,277 @@ def seed_database(db: Session):
             db.add(s)
         else:
             s.setting_value = val
+    db.commit()
+
+    # 7. Master Data Seeding (Phase 2)
+    _seed_master_data(db, org, branches)
+
+
+def _seed_master_data(db: Session, org: Organization, branches: dict):
+    # Cities
+    cities_data = [
+        ("Vadodara", "Gujarat", "India"),
+        ("Halol", "Gujarat", "India"),
+        ("Ahmedabad", "Gujarat", "India"),
+        ("Kampala", "Central", "Uganda"),
+        ("Jinja", "Eastern", "Uganda"),
+        ("Iganga", "Eastern", "Uganda"),
+        ("Cape Coast", "Central", "Ghana"),
+        ("Mombasa", "Coast", "Kenya"),
+    ]
+    for name, state, country in cities_data:
+        c = db.query(City).filter(City.name == name, City.country == country).first()
+        if not c:
+            db.add(City(name=name, state=state, country=country, is_active=True))
+    db.commit()
+
+    # Departments
+    depts_data = [
+        ("Pathology", "PATH", "Clinical pathology, blood sciences, histology and cytology"),
+        ("Radiology & Imaging", "RAD", "Digital radiography, CT scanning and MRI diagnostic imaging"),
+        ("Cardiology", "CARD", "Non-invasive and diagnostic cardiovascular investigations"),
+        ("Ultrasonography", "USG", "High-resolution 3D/4D diagnostic ultrasound and color Doppler"),
+        ("Biochemistry & Hematology", "BIO", "Automated routine and special biochemistry analyzers"),
+        ("General Medicine", "GEN", "General consultation and preventative health screening"),
+    ]
+    departments = {}
+    for name, code, desc in depts_data:
+        dept = db.query(Department).filter(Department.organization_id == org.id, Department.code == code).first()
+        if not dept:
+            dept = Department(organization_id=org.id, name=name, code=code, description=desc, is_active=True)
+            db.add(dept)
+            db.commit()
+            db.refresh(dept)
+        departments[code] = dept
+
+    # Patient Categories
+    patient_cats = [
+        ("General / Walk-in", 0.0),
+        ("Senior Citizen", 10.0),
+        ("Corporate Insurance Partner", 15.0),
+        ("Staff & Dependents", 25.0),
+        ("Subsidized Healthcare Scheme", 30.0),
+    ]
+    for name, disc in patient_cats:
+        pc = db.query(PatientCategory).filter(PatientCategory.organization_id == org.id, PatientCategory.name == name).first()
+        if not pc:
+            db.add(PatientCategory(organization_id=org.id, name=name, discount_percentage=disc, is_active=True))
+    db.commit()
+
+    # Doctor Categories
+    doc_cats_data = [
+        "Consultant Radiologist",
+        "Consultant Pathologist",
+        "Interventional Cardiologist",
+        "Consultant Physician",
+        "Consultant Sonologist",
+        "General Practitioner",
+    ]
+    doc_categories = {}
+    for name in doc_cats_data:
+        dc = db.query(DoctorCategory).filter(DoctorCategory.organization_id == org.id, DoctorCategory.name == name).first()
+        if not dc:
+            dc = DoctorCategory(organization_id=org.id, name=name, is_active=True)
+            db.add(dc)
+            db.commit()
+            db.refresh(dc)
+        doc_categories[name] = dc
+
+    # Doctors
+    doctors_data = [
+        ("Dr. Marcus Vance", "Consultant Radiologist", "RAD", "MBBS, MD Radio-Diagnosis", "+91 98250 11001", "dr.vance@apexhealth.org", "both", 15.0, "Apex Tower, Sayajigunj", "Vadodara"),
+        ("Dr. Elena Rostova", "Consultant Pathologist", "PATH", "MBBS, MD Pathology", "+91 98250 11002", "dr.rostova@apexhealth.org", "both", 12.0, "Health Arcade, Race Course", "Vadodara"),
+        ("Dr. Rajesh Gupta", "Interventional Cardiologist", "CARD", "MBBS, MD, DM Cardiology", "+91 98250 11003", "dr.gupta@apexhealth.org", "both", 15.0, "Alkapuri Diagnostics Plaza", "Vadodara"),
+        ("Dr. Amanda Brooks", "General Practitioner", "GEN", "MBBS, DNB Family Medicine", "+91 98250 11004", "dr.brooks@apexhealth.org", "referring", 10.0, "Near Clock Tower", "Halol"),
+        ("Dr. Kwame Mensah", "Consultant Physician", "GEN", "MBChB, FWACP Internal Medicine", "+256 701 55001", "dr.mensah@apexhealth.org", "referring", 10.0, "Victoria Clinic Road", "Kampala"),
+        ("Dr. Zainab Al-Mansoor", "Consultant Sonologist", "USG", "MBBS, DMRD Ultrasound", "+254 711 55002", "dr.almansoor@apexhealth.org", "both", 12.0, "Coastline Health Hub", "Mombasa"),
+    ]
+    doctors = {}
+    for name, cat_name, dept_code, qual, phone, email, dtype, comm, addr, city in doctors_data:
+        doc = db.query(Doctor).filter(Doctor.organization_id == org.id, Doctor.full_name == name).first()
+        if not doc:
+            doc = Doctor(
+                organization_id=org.id,
+                category_id=doc_categories[cat_name].id if cat_name in doc_categories else None,
+                department_id=departments[dept_code].id if dept_code in departments else None,
+                full_name=name,
+                qualification=qual,
+                phone=phone,
+                email=email,
+                doctor_type=dtype,
+                commission_rate=comm,
+                address_line1=addr,
+                city=city,
+                is_active=True,
+            )
+            db.add(doc)
+            db.commit()
+            db.refresh(doc)
+        doctors[name] = doc
+
+    # Investigation Categories
+    inv_cats_data = [
+        ("Clinical Pathology & Blood", "LAB-BLD"),
+        ("Digital Radiography / X-Ray", "RAD-XRAY"),
+        ("Diagnostic Ultrasound & Doppler", "USG-SCAN"),
+        ("Advanced Computed Tomography", "RAD-CT"),
+        ("Magnetic Resonance Imaging", "RAD-MRI"),
+        ("Non-Invasive Cardiology", "CARD-TEST"),
+    ]
+    inv_categories = {}
+    for name, code in inv_cats_data:
+        ic = db.query(InvestigationCategory).filter(InvestigationCategory.organization_id == org.id, InvestigationCategory.code == code).first()
+        if not ic:
+            ic = InvestigationCategory(organization_id=org.id, name=name, code=code, is_active=True)
+            db.add(ic)
+            db.commit()
+            db.refresh(ic)
+        inv_categories[code] = ic
+
+    # Report Templates
+    report_templates_data = [
+        ("Standard Pathology Laboratory Report", "PATH", '{"sections": ["specimen", "parameters", "findings", "notes"]}', "The specimen was examined according to clinical laboratory standard procedures."),
+        ("Standard Digital Radiology Report", "RAD", '{"sections": ["technique", "findings", "impression"]}', "CLINICAL INDICATION:\nTECHNIQUE: Standard multi-projection digital radiography.\nFINDINGS: Normal bone density, articular spaces preserved.\nIMPRESSION: No acute radiographic abnormality demonstrated."),
+        ("Standard Ultrasound Abdomen & Pelvis Report", "USG", '{"sections": ["liver", "gallbladder", "pancreas", "spleen", "kidneys", "bladder", "impression"]}', "FINDINGS:\nLiver: Normal size and parenchymal echotexture.\nGallbladder: Normal wall thickness, no calculus.\nKidneys: Bilateral normal cortical thickness.\nIMPRESSION: Normal scan."),
+    ]
+    report_templates = {}
+    for name, dept_code, schema_json, def_text in report_templates_data:
+        rt = db.query(ReportTemplate).filter(ReportTemplate.organization_id == org.id, ReportTemplate.name == name).first()
+        if not rt:
+            rt = ReportTemplate(
+                organization_id=org.id,
+                name=name,
+                department_id=departments[dept_code].id if dept_code in departments else None,
+                schema_json=schema_json,
+                default_text=def_text,
+                is_active=True
+            )
+            db.add(rt)
+            db.commit()
+            db.refresh(rt)
+        report_templates[name] = rt
+
+    # Investigations Catalogue
+    invs_data = [
+        ("CBC-01", "Complete Blood Count with ESR", "LAB-BLD", "PATH", Decimal("450.00"), Decimal("600.00"), 12, "Standard Pathology Laboratory Report"),
+        ("LIP-02", "Comprehensive Lipid Profile", "LAB-BLD", "PATH", Decimal("850.00"), Decimal("1100.00"), 24, "Standard Pathology Laboratory Report"),
+        ("LFT-03", "Liver Function Test (LFT)", "LAB-BLD", "PATH", Decimal("750.00"), Decimal("950.00"), 24, "Standard Pathology Laboratory Report"),
+        ("KFT-04", "Kidney Function Test (KFT)", "LAB-BLD", "PATH", Decimal("700.00"), Decimal("900.00"), 24, "Standard Pathology Laboratory Report"),
+        ("XRAY-01", "Digital Chest X-Ray PA View", "RAD-XRAY", "RAD", Decimal("500.00"), Decimal("700.00"), 6, "Standard Digital Radiology Report"),
+        ("XRAY-02", "Lumbar Spine X-Ray AP/LAT", "RAD-XRAY", "RAD", Decimal("800.00"), Decimal("1050.00"), 6, "Standard Digital Radiology Report"),
+        ("USG-01", "Ultrasound Whole Abdomen & Pelvis", "USG-SCAN", "USG", Decimal("1500.00"), Decimal("2000.00"), 12, "Standard Ultrasound Abdomen & Pelvis Report"),
+        ("ECG-01", "12-Lead Electrocardiogram (ECG)", "CARD-TEST", "CARD", Decimal("350.00"), Decimal("500.00"), 2, None),
+        ("CT-01", "CT Brain Non-Contrast", "RAD-CT", "RAD", Decimal("3200.00"), Decimal("4200.00"), 12, "Standard Digital Radiology Report"),
+        ("MRI-01", "MRI Lumbo-Sacral Spine", "RAD-MRI", "RAD", Decimal("6500.00"), Decimal("8000.00"), 24, "Standard Digital Radiology Report"),
+    ]
+    investigations = {}
+    for code, name, cat_code, dept_code, reg_price, emg_price, tat, tmpl_name in invs_data:
+        inv = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == code).first()
+        tmpl_id = report_templates[tmpl_name].id if tmpl_name and tmpl_name in report_templates else None
+        if not inv:
+            inv = Investigation(
+                organization_id=org.id,
+                category_id=inv_categories[cat_code].id if cat_code in inv_categories else None,
+                department_id=departments[dept_code].id if dept_code in departments else None,
+                code=code,
+                name=name,
+                description=f"Standard diagnostic service for {name}",
+                default_price=reg_price,
+                emergency_price=emg_price,
+                turnaround_hours=tat,
+                template_id=tmpl_id,
+                is_active=True,
+            )
+            db.add(inv)
+            db.commit()
+            db.refresh(inv)
+        investigations[code] = inv
+
+    # Branch Price Overrides (e.g. branch 8 Kampala has branch-specific tariff)
+    if "8" in branches and "XRAY-01" in investigations:
+        b_kampala = branches["8"]
+        bp = db.query(InvestigationBranchPrice).filter(
+            InvestigationBranchPrice.investigation_id == investigations["XRAY-01"].id,
+            InvestigationBranchPrice.branch_id == b_kampala.id
+        ).first()
+        if not bp:
+            bp = InvestigationBranchPrice(
+                investigation_id=investigations["XRAY-01"].id,
+                branch_id=b_kampala.id,
+                price=Decimal("65000.00"),
+                emergency_price=Decimal("75000.00"),
+            )
+            db.add(bp)
+            db.commit()
+
+    # Doctor Rates (for Dr. Marcus Vance & Dr. Elena Rostova)
+    if "Dr. Marcus Vance" in doctors and "XRAY-01" in investigations:
+        dr_marcus = doctors["Dr. Marcus Vance"]
+        inv_xray = investigations["XRAY-01"]
+        dr_rate = db.query(DoctorInvestigationRate).filter(
+            DoctorInvestigationRate.doctor_id == dr_marcus.id,
+            DoctorInvestigationRate.investigation_id == inv_xray.id,
+            DoctorInvestigationRate.rate_type == "reporting"
+        ).first()
+        if not dr_rate:
+            db.add(DoctorInvestigationRate(
+                doctor_id=dr_marcus.id,
+                investigation_id=inv_xray.id,
+                rate_type="reporting",
+                regular_fixed=Decimal("150.00"),
+                regular_percentage=0.0,
+                emergency_fixed=Decimal("200.00"),
+                emergency_percentage=0.0,
+            ))
+            db.commit()
+
+    # Other Charge Types
+    other_charges_data = [
+        ("Registration & Patient Smart Card", "REG-FEE", Decimal("100.00"), False),
+        ("Emergency Triage & Fast-Track Fee", "EMG-FEE", Decimal("300.00"), False),
+        ("Nursing & Sterile Blood Sampling", "NUR-FEE", Decimal("150.00"), False),
+        ("Disposable Kit & Sterile Consumables", "PPE-FEE", Decimal("200.00"), True),
+        ("Ambulance Emergency Transfer", "AMB-FEE", Decimal("1200.00"), False),
+    ]
+    for name, code, amt, tax in other_charges_data:
+        oc = db.query(OtherChargeType).filter(OtherChargeType.organization_id == org.id, OtherChargeType.code == code).first()
+        if not oc:
+            db.add(OtherChargeType(
+                organization_id=org.id,
+                name=name,
+                code=code,
+                default_amount=amt,
+                is_taxable=tax,
+                is_active=True
+            ))
+    db.commit()
+
+    # Email Templates
+    email_templates_data = [
+        (
+            "Patient Registration Welcome",
+            "Welcome to Apex Health Diagnostics - UHID {{patient_uhid}}",
+            "Dear {{patient_name}},\n\nThank you for choosing Apex Health Diagnostics. Your patient registration is confirmed with UHID: {{patient_uhid}}.\n\nYou can access your test updates and diagnostic history at any time.\n\nWarm regards,\nApex Health Diagnostics"
+        ),
+        (
+            "Diagnostic Report Verified Notification",
+            "Your Diagnostic Test Report is Ready (Case #{{case_number}})",
+            "Dear {{patient_name}},\n\nYour clinical diagnostic report for Case #{{case_number}} has been verified by our medical specialists and is ready for collection or online viewing.\n\nThank you,\nApex Health Diagnostics"
+        ),
+        (
+            "Appointment & Investigation Reminder",
+            "Upcoming Test Reminder - Apex Health Diagnostics",
+            "Dear {{patient_name}},\n\nThis is a friendly reminder for your scheduled diagnostic test on {{appointment_date}} at {{branch_name}}.\nPlease follow any pre-test fasting instructions provided.\n\nRegards,\nApex Health Team"
+        ),
+    ]
+    for name, subj, body in email_templates_data:
+        et = db.query(EmailTemplate).filter(EmailTemplate.organization_id == org.id, EmailTemplate.name == name).first()
+        if not et:
+            db.add(EmailTemplate(
+                organization_id=org.id,
+                name=name,
+                subject=subj,
+                body=body,
+                is_active=True
+            ))
     db.commit()

@@ -64,7 +64,23 @@ class Doctor(Base, TimestampMixin):
     email = Column(String(255), nullable=True)
     doctor_type = Column(String(50), default="both", nullable=False)  # referring, reporting, both
     commission_rate = Column(Float, default=0.0, nullable=False)
+    address_line1 = Column(String(255), nullable=True)
+    address_line2 = Column(String(255), nullable=True)
+    city = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
+
+
+class DoctorInvestigationRate(Base, TimestampMixin):
+    __tablename__ = "doctor_investigation_rates"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    doctor_id = Column(String(36), ForeignKey("doctors.id", ondelete="CASCADE"), nullable=False, index=True)
+    investigation_id = Column(String(36), ForeignKey("investigations.id", ondelete="CASCADE"), nullable=False, index=True)
+    rate_type = Column(String(20), default="referral", nullable=False)  # referral, reporting
+    regular_fixed = Column(Numeric(10, 2), default=0.00, nullable=False)
+    regular_percentage = Column(Float, default=0.0, nullable=False)
+    emergency_fixed = Column(Numeric(10, 2), default=0.00, nullable=False)
+    emergency_percentage = Column(Float, default=0.0, nullable=False)
 
 
 class InvestigationCategory(Base, TimestampMixin):
@@ -88,6 +104,7 @@ class Investigation(Base, TimestampMixin):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     default_price = Column(Numeric(10, 2), default=0.00, nullable=False)
+    emergency_price = Column(Numeric(10, 2), default=0.00, nullable=False)
     turnaround_hours = Column(Integer, default=24, nullable=False)
     template_id = Column(String(36), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -100,6 +117,30 @@ class InvestigationBranchPrice(Base, TimestampMixin):
     investigation_id = Column(String(36), ForeignKey("investigations.id", ondelete="CASCADE"), nullable=False)
     branch_id = Column(String(36), ForeignKey("branches.id", ondelete="CASCADE"), nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
+    emergency_price = Column(Numeric(10, 2), default=0.00, nullable=False)
+
+
+class OtherChargeType(Base, TimestampMixin):
+    __tablename__ = "other_charge_types"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    code = Column(String(50), nullable=False)
+    default_amount = Column(Numeric(10, 2), default=0.00, nullable=False)
+    is_taxable = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+
+class EmailTemplate(Base, TimestampMixin):
+    __tablename__ = "email_templates"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    subject = Column(String(255), nullable=False)
+    body = Column(Text, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
 
 
 # ==============================================================================

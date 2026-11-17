@@ -116,13 +116,30 @@ Run the backend Pytest test suite:
 python -m pytest backend/tests -v
 ```
 
-All **15 automated tests** pass with 100% success rate:
+All **27 automated tests** pass with 100% success rate:
 - Health checks and DB connection
 - JWT Bearer authentication and token claim validation
 - Password hashing security (Bcrypt)
 - Branch catalog, creation, and status toggles
 - Multi-branch scoping validation
-- Granular RBAC enforcement (Receptionist forbidden from `/api/v1/users`, `/api/v1/roles`, `/api/v1/settings`)
+- Granular RBAC enforcement (Receptionist forbidden from `/api/v1/users`, `/api/v1/roles`, `/api/v1/settings`, and master creation)
+- Department Master CRUD, code uniqueness, and deletion safety checks
+- City / Location Master listing, filtering, and creation
+- Patient Category Master with discount percentages
+- Doctor Category Master
+- Doctor Master directory with referring/reporting filters
+- Doctor Tariff & Investigation Commission rates
+- Investigation Master catalogue with codes, departments, turnaround times (TAT)
+- Branch-specific Investigation Charges overrides
+- Other Charge Types (administrative, nursing, triage, PPE)
+- Email and clinical report templates with dynamic placeholders
+
+Build the frontend bundle:
+```powershell
+cd frontend
+npm run build
+```
+Result: `dist/` production assets cleanly generated with zero TypeScript or Vite errors.
 
 ---
 
