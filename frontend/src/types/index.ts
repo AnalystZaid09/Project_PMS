@@ -250,3 +250,158 @@ export interface ReportTemplateItem {
   updated_at: string;
 }
 
+// ------------------------------------------------------------------------------
+// Phase 3: Patient & Case Types
+// ------------------------------------------------------------------------------
+
+export interface PatientItem {
+  id: string;
+  organization_id: string;
+  branch_id: string;
+  patient_uhid: string;
+  first_name: string;
+  last_name: string;
+  dob?: string;
+  age?: number;
+  gender: string;
+  blood_group?: string;
+  national_id?: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  emergency_contact?: string;
+  category_id?: string;
+  category_name?: string;
+  branch_name?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DuplicateMatch {
+  id: string;
+  patient_uhid: string;
+  full_name: string;
+  phone: string;
+  gender: string;
+  dob?: string;
+  age?: number;
+  city?: string;
+  match_reasons: string[];
+}
+
+export interface DuplicateCheckResult {
+  has_duplicates: boolean;
+  possible_matches: DuplicateMatch[];
+}
+
+export interface CaseItemDetail {
+  id: string;
+  case_id: string;
+  investigation_id: string;
+  investigation_code?: string;
+  investigation_name?: string;
+  quantity: number;
+  price: number;
+  discount_amount: number;
+  tax_amount: number;
+  final_price: number;
+  status: string;
+  created_at: string;
+}
+
+export interface CaseOtherChargeDetail {
+  id: string;
+  case_id: string;
+  charge_type_id: string;
+  charge_name: string;
+  amount: number;
+  created_at: string;
+}
+
+export interface CaseListItem {
+  id: string;
+  case_number: string;
+  patient_id: string;
+  patient_uhid: string;
+  patient_name: string;
+  exam_date: string;
+  status: string;
+  priority: string;
+  case_category: string;
+  referring_doctor_name?: string;
+  reporting_doctor_name?: string;
+  investigations_summary: string;
+  items_count: number;
+  total_charges: number;
+  discount_total: number;
+  net_amount: number;
+  has_report: boolean;
+}
+
+export interface CaseDetail {
+  id: string;
+  organization_id: string;
+  branch_id: string;
+  branch_name?: string;
+  case_number: string;
+  patient_id: string;
+  patient_uhid: string;
+  patient_name: string;
+  patient_phone: string;
+  patient_gender: string;
+  patient_age?: number;
+  referring_doctor_id?: string;
+  referring_doctor_name?: string;
+  reporting_doctor_id?: string;
+  reporting_doctor_name?: string;
+  radiologist_name?: string;
+  pathologist_name?: string;
+  physician_name?: string;
+  other_doctor_name?: string;
+  department_id?: string;
+  department_name?: string;
+  visit_datetime: string;
+  status: string;
+  priority: string;
+  case_category: string;
+  symptoms?: string;
+  clinical_notes?: string;
+  total_charges: number;
+  discount_total: number;
+  tax_total: number;
+  net_amount: number;
+  items: CaseItemDetail[];
+  other_charges: CaseOtherChargeDetail[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TimelineEventItem {
+  id: string;
+  event_type: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  actor_name?: string;
+}
+
+export interface PatientProfile {
+  patient: PatientItem;
+  cases: CaseListItem[];
+  timeline: TimelineEventItem[];
+  total_visits: number;
+  total_billed: number;
+}
+
+export interface CaseStats {
+  total_cases: number;
+  today_cases: number;
+  emergency_cases: number;
+  pending_reports: number;
+  completed_cases: number;
+  today_revenue: number;
+}
+
+

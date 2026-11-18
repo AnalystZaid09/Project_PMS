@@ -5,7 +5,7 @@
 | **Phase 0** | Discovery and Project Foundation | ✅ **Completed** | Repo structure, React+Vite+TS+Tailwind, FastAPI+SQLAlchemy, Docker Compose, Env, Health Check |
 | **Phase 1** | Authentication, Org, Branches & RBAC | ✅ **Completed** | JWT Auth, Org/Branch scoping, Users, Roles, Permissions matrix, Protected routes, RBAC tests (15/15 passed) |
 | **Phase 2** | Master Data Management | ✅ **Completed** | Departments, Cities, Categories, Doctors, Tariffs, Investigations, Charges, Templates (27/27 tests passed) |
-| **Phase 3** | Patient & Case Workflow | 📋 Planned | Patient registration, duplicate check, Case wizard, service items, symptoms |
+| **Phase 3** | Patient & Case Workflow | ✅ **Completed** | Duplicate check, Patient Profile & Timeline, 5-Step Case Wizard, Tariffs, Ancillary Charges, Case Register (35/35 tests passed) |
 | **Phase 4** | Billing & Financial Registers | 📋 Planned | Server-side invoice calc, receipts, split payments, refunds, cash/bank ledgers |
 | **Phase 5** | Reports & Verification Workflow | 📋 Planned | Template editor, review/finalize lifecycle, versioning, branded PDF |
 | **Phase 6** | Analytics, Communication & Audit | 📋 Planned | Dashboard KPIs, internal chat, email templates, audit trail |
@@ -102,3 +102,49 @@
   - Automated tests in `backend/tests/test_masters.py` covering CRUD, duplicates, tariff rates, branch prices, and RBAC rejection.
   - Overall test suite: **27 passed** (100% pass rate).
   - TypeScript & Vite build: **0 errors** (`dist` bundle generated in 35s).
+
+---
+
+### Phase 3: Patient & Case Workflow
+- [x] Reference Screenshot Mappings & Clinical Requirements:
+  - `PMS/New_Patentient/New_Patient.png` -> Step 1: Referring Doctor, City, Faculty/Specialty filter, Patient Selection.
+  - `PMS/New_Patentient/Investigation.png` -> Step 2: Investigation & Price Calculation, Regular vs Emergency tariffs, Patient Category discount, Department filter, Live tariff calculation.
+  - `PMS/New_Patentient/Reporting_Doctor.png` -> Step 3: Reporting Doctor assignment (Radiologist, Pathologist, Consulting Physician, Specialists).
+  - `PMS/New_Patentient/Other_Charges.png` -> Step 4: Ancillary Charges (Disposables, Contrast media, Sterile Syringes, Procedural Fees).
+  - `PMS/New_Patentient/Symtoms.png` -> Step 5: Clinical Symptoms, Prescribing Notes, Priority (Normal, Urgent, Emergency), Final Summary & Registration.
+  - `PMS/New_Patentient/Patient_Record.png` & `PMS_Patient_Registration.png` -> Patient cases list, date range filters, search, Excel export, status badges, case breakdown modal.
+- [x] Relational Database Modelling & Alembic Migrations:
+  - Authored `003_patient_and_case.py` Alembic migration.
+  - Updated `Patient`: `age`, `blood_group`, `national_id`.
+  - Updated `Case`: `radiologist_id`, `pathologist_id`, `physician_id`, `other_doctor_id`, `total_charges`, `discount_total`, `tax_total`, `net_amount`, `case_category` (`regular`/`emergency`), `patient_category_id`, `created_by_id`.
+  - Updated `CaseItem`: `quantity`.
+  - Created `CaseOtherCharge`: Ancillary procedural line items.
+- [x] Backend API Endpoints (`backend/app/api/v1/patients.py` & `backend/app/api/v1/cases.py`):
+  - `POST /patients/check-duplicates`: Warning check for matches on phone, full name, or DOB without silently merging records.
+  - `GET /patients`: List patients with multi-field search (UHID, name, phone, city) and branch scoping.
+  - `POST /patients`: Register patient with auto-generated unique UHID (`APX-PAT-YYYYMMDD-XXXX`), age computation, and audit logging.
+  - `GET /patients/{id}`: Detailed demographics.
+  - `PUT /patients/{id}`: Update demographics and contact information.
+  - `GET /patients/{id}/profile`: Patient profile with visit counters, cumulative billing, and chronological timeline of clinical encounters.
+  - `GET /cases/stats/summary`: Case counters (total today, emergency cases, pending reports, completed cases, today's revenue).
+  - `GET /cases`: Clinical cases register with date range filter, search, branch filter, doctor filter, and status filter.
+  - `POST /cases`: 5-step case registration wizard with server-side price calculation, branch tariffs, patient category discounts, ancillary charges, draft report stubs, and audit logging.
+  - `GET /cases/{id}`: Full case breakdown with line-item test prices, ancillary charges, and assigned doctors.
+  - `PUT /cases/{id}`: Update case priority, notes, doctor assignments, or status.
+  - `DELETE /cases/{id}`: Case cancellation guard preventing deletion if clinical reports have already been finalized or payments recorded.
+- [x] Synthetic Clinical Seed Data:
+  - Seeded 5 diverse synthetic patients (`Rajesh Mehta`, `Ananya Deshmukh`, `Kavita Iyer`, `Aditya Verma`, `Sunil Patil`) with blood groups, contact details, and category associations.
+  - Seeded 5 clinical cases spanning Pathology and Radiology departments with calculated net tariffs and draft report containers.
+- [x] Frontend Clinical SaaS Screens (`frontend/src/features/patients/`):
+  - `CasesListPage.tsx`: Quick statistics cards, date range picker, search, status filter, export to CSV, case breakdown modal preview, cancel case modal dialog.
+  - `CaseRegistrationWizard.tsx`: 5-step interactive stepper with live patient search/inline registration, referring doctor filters, investigation catalogue with live price math and category discounts, reporting doctor assignments, ancillary charges table, priority level, clinical notes, and registration success screen with print slip actions.
+  - `PatientsListPage.tsx`: Patient directory with search, CSV export, view timeline, and book case shortcuts.
+  - `PatientRegistrationModal.tsx`: Real-time duplicate warning alert banner with "Use This Patient" or "Acknowledge Separate Patient" options.
+  - `PatientProfilePage.tsx`: Patient overview card, cumulative billing stats, interactive vertical clinical timeline, and case history table.
+- [x] Routing & Navigation:
+  - Mounted `/cases`, `/cases/new`, `/patients`, `/patients/:id` with permission gates in `frontend/src/routes/AppRoutes.tsx`.
+  - Updated `Sidebar.tsx` navigation under "Patients & Cases" and "Registers".
+- [x] Automated Acceptance & Unit Testing:
+  - 8 automated tests in `backend/tests/test_patients_cases.py` verifying duplicate checks, UHID generation, server calculation math, date filters, timeline events, and cancellation guards.
+  - Total test suite: **35 passed** (100% pass rate).
+  - TypeScript & Vite build: **0 errors** cleanly bundled in production mode.

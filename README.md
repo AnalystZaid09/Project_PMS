@@ -116,7 +116,7 @@ Run the backend Pytest test suite:
 python -m pytest backend/tests -v
 ```
 
-All **27 automated tests** pass with 100% success rate:
+All **35 automated tests** pass with 100% success rate:
 - Health checks and DB connection
 - JWT Bearer authentication and token claim validation
 - Password hashing security (Bcrypt)
@@ -133,6 +133,14 @@ All **27 automated tests** pass with 100% success rate:
 - Branch-specific Investigation Charges overrides
 - Other Charge Types (administrative, nursing, triage, PPE)
 - Email and clinical report templates with dynamic placeholders
+- Duplicate patient detection (matches on phone, full name, and DOB without silent merge)
+- Patient registration and unique UHID generation (`APX-PAT-YYYYMMDD-XXXX`)
+- Patient directory search and profile with interactive chronological timeline
+- Multi-step clinical case registration wizard with server-side price calculation
+- Emergency vs Regular tariffs and patient category discounts
+- Ancillary and procedural charges integration
+- Clinical case register with date range filters, search, and status tracking
+- Case cancellation safety guards preventing deletion if reports are finalized or paid
 
 Build the frontend bundle:
 ```powershell

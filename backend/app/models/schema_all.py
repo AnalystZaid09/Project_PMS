@@ -157,7 +157,10 @@ class Patient(Base, TimestampMixin):
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     dob = Column(Date, nullable=True)
+    age = Column(Integer, nullable=True)
     gender = Column(String(20), nullable=False)  # male, female, other, undisclosed
+    blood_group = Column(String(10), nullable=True)
+    national_id = Column(String(50), nullable=True)
     phone = Column(String(50), nullable=False, index=True)
     email = Column(String(255), nullable=True)
     address = Column(Text, nullable=True)
@@ -177,12 +180,23 @@ class Case(Base, TimestampMixin):
     patient_id = Column(String(36), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False, index=True)
     referring_doctor_id = Column(String(36), ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
     reporting_doctor_id = Column(String(36), ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
+    radiologist_id = Column(String(36), ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
+    pathologist_id = Column(String(36), ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
+    physician_id = Column(String(36), ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
+    other_doctor_id = Column(String(36), ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
     department_id = Column(String(36), ForeignKey("departments.id", ondelete="SET NULL"), nullable=True)
     visit_datetime = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    status = Column(String(50), default="registered", nullable=False)
+    status = Column(String(50), default="registered", nullable=False)  # draft, registered, in_progress, report_pending, verification_pending, completed, cancelled
     symptoms = Column(Text, nullable=True)
     clinical_notes = Column(Text, nullable=True)
-    priority = Column(String(20), default="normal", nullable=False)
+    priority = Column(String(20), default="normal", nullable=False)  # normal, urgent, emergency
+    case_category = Column(String(50), default="regular", nullable=False)  # regular, emergency
+    patient_category_id = Column(String(36), ForeignKey("patient_categories.id", ondelete="SET NULL"), nullable=True)
+    total_charges = Column(Numeric(10, 2), default=0.00, nullable=False)
+    discount_total = Column(Numeric(10, 2), default=0.00, nullable=False)
+    tax_total = Column(Numeric(10, 2), default=0.00, nullable=False)
+    net_amount = Column(Numeric(10, 2), default=0.00, nullable=False)
+    created_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
 
 class CaseItem(Base, TimestampMixin):
@@ -191,11 +205,22 @@ class CaseItem(Base, TimestampMixin):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     case_id = Column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True)
     investigation_id = Column(String(36), ForeignKey("investigations.id", ondelete="CASCADE"), nullable=False)
+    quantity = Column(Integer, default=1, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
     discount_amount = Column(Numeric(10, 2), default=0.00, nullable=False)
     tax_amount = Column(Numeric(10, 2), default=0.00, nullable=False)
     final_price = Column(Numeric(10, 2), nullable=False)
-    status = Column(String(50), default="pending", nullable=False)
+    status = Column(String(50), default="pending", nullable=False)  # pending, in_progress, completed, cancelled
+
+
+class CaseOtherCharge(Base, TimestampMixin):
+    __tablename__ = "case_other_charges"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    case_id = Column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True)
+    charge_type_id = Column(String(36), ForeignKey("other_charge_types.id", ondelete="CASCADE"), nullable=False)
+    charge_name = Column(String(100), nullable=False)
+    amount = Column(Numeric(10, 2), default=0.00, nullable=False)
 
 
 class ReportTemplate(Base, TimestampMixin):

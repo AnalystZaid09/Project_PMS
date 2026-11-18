@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 from sqlalchemy.orm import Session
 from app.core.security import get_password_hash
@@ -9,7 +10,8 @@ from app.models.settings import SystemSetting
 from app.models.schema_all import (
     Department, City, PatientCategory, DoctorCategory, Doctor, DoctorInvestigationRate,
     InvestigationCategory, Investigation, InvestigationBranchPrice,
-    OtherChargeType, EmailTemplate, ReportTemplate
+    OtherChargeType, EmailTemplate, ReportTemplate,
+    Patient, Case, CaseItem, CaseOtherCharge, ClinicalReport
 )
 
 DEFAULT_PASSWORD = "Admin@123"
@@ -576,3 +578,206 @@ def _seed_master_data(db: Session, org: Organization, branches: dict):
                 is_active=True
             ))
     db.commit()
+
+    # --------------------------------------------------------------------------
+    # Synthetic Patients & Cases Seed Data
+    # --------------------------------------------------------------------------
+    branch_id = branches.get("1").id if "1" in branches else list(branches.values())[0].id
+
+    # Categories lookup
+    senior_cat = db.query(PatientCategory).filter(PatientCategory.organization_id == org.id, PatientCategory.name.like("%Senior%")).first()
+    corp_cat = db.query(PatientCategory).filter(PatientCategory.organization_id == org.id, PatientCategory.name.like("%Corporate%")).first()
+
+    # Doctors lookup
+    doc_trivedi = db.query(Doctor).filter(Doctor.organization_id == org.id, Doctor.full_name.like("%Trivedi%")).first()
+    doc_kulkarni = db.query(Doctor).filter(Doctor.organization_id == org.id, Doctor.full_name.like("%Kulkarni%")).first()
+    doc_nair = db.query(Doctor).filter(Doctor.organization_id == org.id, Doctor.full_name.like("%Nair%")).first()
+    doc_merchant = db.query(Doctor).filter(Doctor.organization_id == org.id, Doctor.full_name.like("%Merchant%")).first()
+
+    # Investigations lookup
+    inv_cbc = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "HAEM-001").first()
+    inv_lft = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "BIOC-002").first()
+    inv_cxr = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "RAD-001").first()
+    inv_mri = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "RAD-002").first()
+    inv_usg = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "RAD-003").first()
+
+    # Other charges lookup
+    charge_reg = db.query(OtherChargeType).filter(OtherChargeType.organization_id == org.id, OtherChargeType.code == "REG-FEE").first()
+    charge_kit = db.query(OtherChargeType).filter(OtherChargeType.organization_id == org.id, OtherChargeType.code == "PPE-FEE").first()
+
+    synthetic_patients = [
+        ("Rajesh", "Mehta", "1972-04-12", 54, "male", "B+", "+91-9820123456", "rajesh.mehta@example.com", "402 Sea Pearl, Worli", "Mumbai", senior_cat.id if senior_cat else None),
+        ("Ananya", "Deshmukh", "1998-09-21", 28, "female", "O+", "+91-9820234567", "ananya.d@example.com", "12 Koregaon Park", "Pune", corp_cat.id if corp_cat else None),
+        ("Kavita", "Iyer", "1964-11-05", 62, "female", "A+", "+91-9820345678", "kavita.iyer@example.com", "804 Palm Beach Road", "Navi Mumbai", senior_cat.id if senior_cat else None),
+        ("Aditya", "Verma", "1991-07-18", 35, "male", "AB+", "+91-9820456789", "aditya.v@example.com", "55 Hiranandani Estate", "Thane", None),
+        ("Sunil", "Patil", "1984-02-28", 42, "male", "O-", "+91-9820567890", "sunil.patil@example.com", "101 Station Road", "Kalyan", None),
+    ]
+
+    patient_records = []
+    idx = 1
+    today_str = datetime.now(timezone.utc).strftime("%Y%m%d")
+
+    for fn, ln, dob_s, age, gen, bg, ph, em, addr, city, cat_id in synthetic_patients:
+        existing_p = db.query(Patient).filter(Patient.organization_id == org.id, Patient.phone == ph).first()
+        if not existing_p:
+            uhid = f"APX-PAT-{today_str}-{idx:04d}"
+            p = Patient(
+                organization_id=org.id,
+                branch_id=branch_id,
+                patient_uhid=uhid,
+                first_name=fn,
+                last_name=ln,
+                dob=datetime.strptime(dob_s, "%Y-%m-%d").date(),
+                age=age,
+                gender=gen,
+                blood_group=bg,
+                phone=ph,
+                email=em,
+                address=addr,
+                city=city,
+                category_id=cat_id,
+                is_active=True
+            )
+            db.add(p)
+            db.commit()
+            db.refresh(p)
+            patient_records.append(p)
+            idx += 1
+        else:
+            patient_records.append(existing_p)
+
+    # Synthetic Cases
+    cases_config = [
+        (
+            0, # Rajesh Mehta
+            doc_trivedi.id if doc_trivedi else None,
+            doc_nair.id if doc_nair else None,
+            [inv_cxr, inv_cbc],
+            "in_progress",
+            "normal",
+            "regular",
+            "Persistent cough, fever for 4 days",
+            "Rule out pneumonia or lower respiratory tract infection"
+        ),
+        (
+            1, # Ananya Deshmukh
+            doc_kulkarni.id if doc_kulkarni else None,
+            doc_nair.id if doc_nair else None,
+            [inv_cbc, inv_lft],
+            "report_pending",
+            "normal",
+            "regular",
+            "Annual corporate health checkup, mild fatigue",
+            "Routine screening panel"
+        ),
+        (
+            2, # Kavita Iyer
+            doc_trivedi.id if doc_trivedi else None,
+            doc_merchant.id if doc_merchant else None,
+            [inv_mri],
+            "registered",
+            "emergency",
+            "emergency",
+            "Severe episodic migraine with visual aura and vertigo",
+            "Stat neuroimaging MRI brain with contrast"
+        ),
+        (
+            3, # Aditya Verma
+            doc_kulkarni.id if doc_kulkarni else None,
+            doc_merchant.id if doc_merchant else None,
+            [inv_usg],
+            "completed",
+            "normal",
+            "regular",
+            "Right upper quadrant abdominal pain post-prandial",
+            "Evaluate for cholelithiasis or biliary sludge"
+        ),
+        (
+            4, # Sunil Patil
+            None,
+            doc_nair.id if doc_nair else None,
+            [inv_cbc],
+            "registered",
+            "normal",
+            "regular",
+            "General health evaluation and fatigue",
+            "Routine baseline complete blood count"
+        ),
+    ]
+
+    c_idx = 1
+    for p_idx, ref_id, rep_id, inv_list, c_status, c_priority, c_cat, symp, notes in cases_config:
+        pat = patient_records[p_idx]
+        case_no = f"APX-CAS-{today_str}-{c_idx:04d}"
+        c_idx += 1
+
+        existing_c = db.query(Case).filter(Case.organization_id == org.id, Case.case_number == case_no).first()
+        if not existing_c:
+            # Calculate tariffs
+            gross = Decimal("0.00")
+            disc = Decimal("0.00")
+
+            # Check senior discount
+            cat_disc_pct = Decimal("0.00")
+            if pat.category_id:
+                p_cat = db.query(PatientCategory).filter(PatientCategory.id == pat.category_id).first()
+                if p_cat and p_cat.discount_percentage:
+                    cat_disc_pct = Decimal(str(p_cat.discount_percentage))
+
+            valid_invs = [i for i in inv_list if i is not None]
+            for inv in valid_invs:
+                price = inv.emergency_price if c_cat == "emergency" and inv.emergency_price > 0 else inv.default_price
+                gross += price
+                if cat_disc_pct > 0:
+                    disc += round(price * (cat_disc_pct / Decimal("100.00")), 2)
+
+            net = gross - disc
+
+            case_obj = Case(
+                organization_id=org.id,
+                branch_id=branch_id,
+                case_number=case_no,
+                patient_id=pat.id,
+                referring_doctor_id=ref_id,
+                reporting_doctor_id=rep_id,
+                visit_datetime=datetime.now(timezone.utc),
+                status=c_status,
+                priority=c_priority,
+                case_category=c_cat,
+                patient_category_id=pat.category_id,
+                symptoms=symp,
+                clinical_notes=notes,
+                total_charges=gross,
+                discount_total=disc,
+                tax_total=Decimal("0.00"),
+                net_amount=net,
+            )
+            db.add(case_obj)
+            db.flush()
+
+            for inv in valid_invs:
+                price = inv.emergency_price if c_cat == "emergency" and inv.emergency_price > 0 else inv.default_price
+                item_disc = round(price * (cat_disc_pct / Decimal("100.00")), 2) if cat_disc_pct > 0 else Decimal("0.00")
+                ci = CaseItem(
+                    case_id=case_obj.id,
+                    investigation_id=inv.id,
+                    quantity=1,
+                    price=price,
+                    discount_amount=item_disc,
+                    tax_amount=Decimal("0.00"),
+                    final_price=price - item_disc,
+                    status="completed" if c_status == "completed" else "pending",
+                )
+                db.add(ci)
+                db.flush()
+
+                # Draft report
+                db.add(ClinicalReport(
+                    case_item_id=ci.id,
+                    status="completed" if c_status == "completed" else "draft",
+                    current_version=1,
+                    reporting_doctor_id=rep_id,
+                ))
+
+            db.commit()
+

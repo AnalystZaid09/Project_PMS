@@ -54,12 +54,13 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
       icon: LayoutDashboard,
     },
     {
-      title: "Patients",
+      title: "Patients & Cases",
       icon: UserCheck,
       permission: "patient_registration:view",
       children: [
-        { title: "Patient List", href: "/patients", permission: "patient_registration:view" },
-        { title: "Register Patient", href: "/patients/new", permission: "patient_registration:add" },
+        { title: "Case Register", href: "/cases", permission: "patient_registration:view" },
+        { title: "New Case Registration", href: "/cases/new", permission: "patient_registration:add" },
+        { title: "Patient Directory", href: "/patients", permission: "patient_registration:view" },
       ],
     },
     {
@@ -96,7 +97,7 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
       icon: BookOpen,
       permission: "financial_registers:view",
       children: [
-        { title: "Case Register", href: "/registers/case", permission: "financial_registers:view" },
+        { title: "Case Register", href: "/cases", permission: "financial_registers:view" },
         { title: "Bank Register", href: "/registers/bank", permission: "financial_registers:view" },
         { title: "Expense Register", href: "/registers/expense", permission: "financial_registers:view" },
         { title: "Petty Cash", href: "/registers/petty-cash", permission: "financial_registers:view" },

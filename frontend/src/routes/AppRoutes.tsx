@@ -20,6 +20,10 @@ import { InvestigationChargesPage } from "@/features/masters/InvestigationCharge
 import { OtherChargesPage } from "@/features/masters/OtherChargesPage";
 import { EmailTemplatesPage } from "@/features/masters/EmailTemplatesPage";
 import { ReportTemplatesPage } from "@/features/masters/ReportTemplatesPage";
+import { PatientsListPage } from "@/features/patients/PatientsListPage";
+import { PatientProfilePage } from "@/features/patients/PatientProfilePage";
+import { CasesListPage } from "@/features/patients/CasesListPage";
+import { CaseRegistrationWizard } from "@/features/patients/CaseRegistrationWizard";
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -32,6 +36,18 @@ export const AppRoutes: React.FC = () => {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+
+          {/* Phase 3: Patient & Case Workflow Routes */}
+          <Route element={<ProtectedRoute requiredPermission="patient_registration:view" />}>
+            <Route path="/cases" element={<CasesListPage />} />
+            <Route path="/patients" element={<PatientsListPage />} />
+            <Route path="/patients/:id" element={<PatientProfilePage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="patient_registration:add" />}>
+            <Route path="/cases/new" element={<CaseRegistrationWizard />} />
+            <Route path="/patients/new" element={<Navigate to="/cases/new" replace />} />
+          </Route>
 
           {/* Admin Routes with Permission Checks */}
           <Route element={<ProtectedRoute requiredPermission="user_master:view" />}>
