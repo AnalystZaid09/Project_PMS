@@ -498,3 +498,4 @@ export const PatientProfilePage: React.FC = () => {
     </div>
   );
 };
+

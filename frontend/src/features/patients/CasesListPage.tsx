@@ -671,3 +671,4 @@ export const CasesListPage: React.FC = () => {
     </div>
   );
 };
+

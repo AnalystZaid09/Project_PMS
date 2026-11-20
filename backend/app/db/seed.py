@@ -11,7 +11,8 @@ from app.models.schema_all import (
     Department, City, PatientCategory, DoctorCategory, Doctor, DoctorInvestigationRate,
     InvestigationCategory, Investigation, InvestigationBranchPrice,
     OtherChargeType, EmailTemplate, ReportTemplate,
-    Patient, Case, CaseItem, CaseOtherCharge, ClinicalReport
+    Patient, Case, CaseItem, CaseOtherCharge, ClinicalReport,
+    Invoice, Payment, FinancialRegister
 )
 
 DEFAULT_PASSWORD = "Admin@123"
@@ -595,11 +596,11 @@ def _seed_master_data(db: Session, org: Organization, branches: dict):
     doc_merchant = db.query(Doctor).filter(Doctor.organization_id == org.id, Doctor.full_name.like("%Merchant%")).first()
 
     # Investigations lookup
-    inv_cbc = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "HAEM-001").first()
-    inv_lft = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "BIOC-002").first()
-    inv_cxr = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "RAD-001").first()
-    inv_mri = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "RAD-002").first()
-    inv_usg = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "RAD-003").first()
+    inv_cbc = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "CBC-01").first()
+    inv_lft = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "LFT-03").first()
+    inv_cxr = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "XRAY-01").first()
+    inv_mri = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "MRI-01").first()
+    inv_usg = db.query(Investigation).filter(Investigation.organization_id == org.id, Investigation.code == "USG-01").first()
 
     # Other charges lookup
     charge_reg = db.query(OtherChargeType).filter(OtherChargeType.organization_id == org.id, OtherChargeType.code == "REG-FEE").first()
@@ -779,5 +780,181 @@ def _seed_master_data(db: Session, org: Organization, branches: dict):
                     reporting_doctor_id=rep_id,
                 ))
 
+            # Automatically create Invoice for the case
+            inv_no = f"APX-INV-{today_str}-{c_idx-1:04d}"
+            existing_inv = db.query(Invoice).filter(Invoice.invoice_number == inv_no).first()
+            if not existing_inv:
+                is_paid = c_status in ["completed", "report_pending"]
+                paid_amt = net if is_paid else Decimal("0.00")
+                bal = Decimal("0.00") if is_paid else net
+                inv_status = "paid" if is_paid else "unpaid"
+
+                invoice = Invoice(
+                    organization_id=org.id,
+                    branch_id=branch_id,
+                    case_id=case_obj.id,
+                    invoice_number=inv_no,
+                    subtotal=gross,
+                    discount_total=disc,
+                    tax_total=Decimal("0.00"),
+                    grand_total=net,
+                    paid_amount=paid_amt,
+                    outstanding_balance=bal,
+                    payment_status=inv_status,
+                )
+                db.add(invoice)
+                db.flush()
+
+                if is_paid:
+                    rec_no = f"APX-REC-{today_str}-{c_idx-1:04d}"
+                    pm = Payment(
+                        invoice_id=invoice.id,
+                        organization_id=org.id,
+                        branch_id=branch_id,
+                        receipt_number=rec_no,
+                        amount=paid_amt,
+                        payment_mode="card" if p_idx % 2 == 0 else "cash",
+                        reference_number=f"TXN-{today_str}-{c_idx-1:04d}",
+                        is_refund=False,
+                        notes="Diagnostic billing settlement at reception",
+                    )
+                    db.add(pm)
+
+                    # Add to Case Register
+                    db.add(FinancialRegister(
+                        organization_id=org.id,
+                        branch_id=branch_id,
+                        register_type="case",
+                        serial_no=c_idx - 1,
+                        transaction_date=datetime.now(timezone.utc),
+                        particulars=f"Case fee collection ({case_obj.case_number})",
+                        amount=paid_amt,
+                        direction="credit",
+                        regular_or_emergency=c_cat,
+                        payment_mode="card" if p_idx % 2 == 0 else "cash",
+                        due_or_paid="paid",
+                        patient_name=f"{pat.first_name} {pat.last_name}",
+                        case_number=case_obj.case_number,
+                        receipt_number=rec_no,
+                        reference_type="payment",
+                        reference_id=pm.id,
+                        remark="Standard diagnostic examination collection",
+                    ))
+
+                    # If card/online, also add to Bank Register
+                    if p_idx % 2 == 0:
+                        db.add(FinancialRegister(
+                            organization_id=org.id,
+                            branch_id=branch_id,
+                            register_type="bank",
+                            serial_no=c_idx - 1,
+                            transaction_date=datetime.now(timezone.utc),
+                            cheque_no=f"POS-CARD-{c_idx-1:04d}",
+                            particulars=f"POS Settlement ({pat.first_name} {pat.last_name})",
+                            amount=paid_amt,
+                            direction="credit",
+                            regular_or_emergency=c_cat,
+                            payment_mode="card",
+                            due_or_paid="paid",
+                            patient_name=f"{pat.first_name} {pat.last_name}",
+                            case_number=case_obj.case_number,
+                            receipt_number=rec_no,
+                            reference_type="payment",
+                            reference_id=pm.id,
+                            remark="Electronic merchant bank card settlement",
+                        ))
+
             db.commit()
+
+    # --------------------------------------------------------------------------
+    # Additional Financial Registers Seeding (Bank, Expense, Petty Cash)
+    # --------------------------------------------------------------------------
+    # 1. Bank Register entries
+    bank_samples = [
+        ("CHQ-88201", "Direct Deposit - BlueCross Insurance Claims Reimbursement", Decimal("45000.00"), "credit", "regular", "cheque", "paid", "Quarterly panel claims settlement"),
+        ("NEFT-99120", "Diagnostic Equipment Maintenance - Siemens Healthcare", Decimal("18500.00"), "debit", "regular", "online", "paid", "Annual AMC for X-Ray and Ultrasound machines"),
+        ("CHQ-88205", "Doctor Professional Referral Fees Payout", Decimal("12500.00"), "debit", "regular", "cheque", "paid", "Monthly consulting doctor fees"),
+    ]
+    for b_idx, (chq, part, amt, direction, reg_emg, mode, due_paid, remark) in enumerate(bank_samples, start=10):
+        exists = db.query(FinancialRegister).filter(
+            FinancialRegister.organization_id == org.id,
+            FinancialRegister.register_type == "bank",
+            FinancialRegister.cheque_no == chq
+        ).first()
+        if not exists:
+            db.add(FinancialRegister(
+                organization_id=org.id,
+                branch_id=branch_id,
+                register_type="bank",
+                serial_no=b_idx,
+                transaction_date=datetime.now(timezone.utc),
+                cheque_no=chq,
+                particulars=part,
+                amount=amt,
+                direction=direction,
+                regular_or_emergency=reg_emg,
+                payment_mode=mode,
+                due_or_paid=due_paid,
+                remark=remark,
+            ))
+
+    # 2. Expense Register entries
+    expense_samples = [
+        ("CHQ-77101", "Biomedical Waste Disposal & Incineration Services", Decimal("3500.00"), "debit", "regular", "cheque", "paid", "Monthly hazardous clinical waste compliance"),
+        ("CASH-VOUCH-01", "Laboratory Reagents & Control Sera - Roche Diagnostics", Decimal("14200.00"), "debit", "regular", "cash", "paid", "Biochemistry and hematology reagent kits"),
+        ("CHQ-77104", "Electric Utility & Backup Generator Fuel", Decimal("8900.00"), "debit", "regular", "cheque", "paid", "Facility utilities and power maintenance"),
+        ("INV-DUE-99", "Stationery, Thermal Printer Rolls & Barcode Labels", Decimal("2400.00"), "debit", "regular", "cash", "due", "Pending vendor invoice approval"),
+    ]
+    for e_idx, (chq, part, amt, direction, reg_emg, mode, due_paid, remark) in enumerate(expense_samples, start=1):
+        exists = db.query(FinancialRegister).filter(
+            FinancialRegister.organization_id == org.id,
+            FinancialRegister.register_type == "expense",
+            FinancialRegister.particulars == part
+        ).first()
+        if not exists:
+            db.add(FinancialRegister(
+                organization_id=org.id,
+                branch_id=branch_id,
+                register_type="expense",
+                serial_no=e_idx,
+                transaction_date=datetime.now(timezone.utc),
+                cheque_no=chq,
+                particulars=part,
+                amount=amt,
+                direction=direction,
+                regular_or_emergency=reg_emg,
+                payment_mode=mode,
+                due_or_paid=due_paid,
+                remark=remark,
+            ))
+
+    # 3. Petty Cash Register entries
+    petty_cash_samples = [
+        ("Petty Cash Replenishment from Main Vault", Decimal("5000.00"), "credit", "cash", "paid", "Weekly receptionist float replenishment"),
+        ("Urgent Courier for Histopathology Biopsy Samples", Decimal("450.00"), "debit", "cash", "paid", "Sent to reference laboratory via fast courier"),
+        ("Drinking Water Dispenser Refill Cans", Decimal("600.00"), "debit", "cash", "paid", "Patient waiting lounge supplies"),
+        ("Emergency Cleaning & Disinfection Supplies", Decimal("850.00"), "debit", "cash", "paid", "Sanitizers, sterile gloves and alcohol wipes"),
+    ]
+    for p_idx, (part, amt, direction, mode, due_paid, remark) in enumerate(petty_cash_samples, start=1):
+        exists = db.query(FinancialRegister).filter(
+            FinancialRegister.organization_id == org.id,
+            FinancialRegister.register_type == "petty_cash",
+            FinancialRegister.particulars == part
+        ).first()
+        if not exists:
+            db.add(FinancialRegister(
+                organization_id=org.id,
+                branch_id=branch_id,
+                register_type="petty_cash",
+                serial_no=p_idx,
+                transaction_date=datetime.now(timezone.utc),
+                particulars=part,
+                amount=amt,
+                direction=direction,
+                payment_mode=mode,
+                due_or_paid=due_paid,
+                remark=remark,
+            ))
+
+    db.commit()
 

@@ -404,4 +404,140 @@ export interface CaseStats {
   today_revenue: number;
 }
 
+// ------------------------------------------------------------------------------
+// Phase 4: Billing & Financial Registers Types
+// ------------------------------------------------------------------------------
+
+export interface InvoiceItem {
+  id: string;
+  item_type: string;
+  code?: string;
+  name: string;
+  quantity: number;
+  unit_price: number;
+  discount_amount: number;
+  final_price: number;
+}
+
+export interface PaymentRecord {
+  id: string;
+  invoice_id: string;
+  receipt_number: string;
+  amount: number;
+  payment_mode: string;
+  reference_number?: string;
+  is_refund: boolean;
+  notes?: string;
+  collected_by_name?: string;
+  created_at: string;
+}
+
+export interface InvoiceDetail {
+  id: string;
+  organization_id: string;
+  branch_id: string;
+  branch_name?: string;
+  case_id: string;
+  case_number: string;
+  patient_id: string;
+  patient_uhid: string;
+  patient_name: string;
+  patient_phone: string;
+  patient_category_name?: string;
+  invoice_number: string;
+  subtotal: number;
+  discount_total: number;
+  discount_reason?: string;
+  tax_total: number;
+  grand_total: number;
+  paid_amount: number;
+  outstanding_balance: number;
+  payment_status: "unpaid" | "partially_paid" | "paid" | "refunded" | "cancelled";
+  notes?: string;
+  items: InvoiceItem[];
+  payments: PaymentRecord[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BillingSummaryStats {
+  total_invoices: number;
+  paid_count: number;
+  unpaid_count: number;
+  partial_count: number;
+  total_billed: number;
+  total_collected: number;
+  total_due: number;
+}
+
+export interface FinancialRegisterRow {
+  id: string;
+  register_type: string;
+  serial_no?: number;
+  transaction_date: string;
+  cheque_no?: string;
+  particulars?: string;
+  amount: number;
+  direction: "credit" | "debit";
+  debit_or_credit: string;
+  regular_or_emergency?: string;
+  payment_mode?: string;
+  by_cash_or_cheque?: string;
+  due_or_paid?: string;
+  patient_name?: string;
+  case_number?: string;
+  receipt_number?: string;
+  remark?: string;
+  created_at: string;
+}
+
+export interface RegisterSummaryData {
+  items: FinancialRegisterRow[];
+  count: number;
+  sum_amount: number;
+  credit_total: number;
+  debit_total: number;
+}
+
+export interface DateWiseRegisterRow {
+  date: string;
+  daily_total: number;
+  start_at?: string;
+  receipt_no_end?: string;
+  case_count: number;
+}
+
+export interface DateWiseRegisterData {
+  items: DateWiseRegisterRow[];
+  count: number;
+  sum_total: number;
+}
+
+export interface ChargesReportRow {
+  id: string;
+  case_number: string;
+  date: string;
+  patient_name: string;
+  patient_uhid: string;
+  department_name?: string;
+  faculty_name?: string;
+  doctor_name?: string;
+  investigation_code: string;
+  investigation_name: string;
+  amount: number;
+  category: string;
+}
+
+export interface OtherChargesReportRow {
+  id: string;
+  case_number: string;
+  date: string;
+  patient_name: string;
+  patient_uhid: string;
+  charge_category: string;
+  charge_name: string;
+  amount: number;
+}
+
+
 

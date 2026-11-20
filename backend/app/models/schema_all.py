@@ -277,11 +277,13 @@ class Invoice(Base, TimestampMixin):
     invoice_number = Column(String(50), unique=True, nullable=False, index=True)
     subtotal = Column(Numeric(10, 2), nullable=False)
     discount_total = Column(Numeric(10, 2), default=0.00, nullable=False)
+    discount_reason = Column(String(255), nullable=True)
     tax_total = Column(Numeric(10, 2), default=0.00, nullable=False)
     grand_total = Column(Numeric(10, 2), nullable=False)
     paid_amount = Column(Numeric(10, 2), default=0.00, nullable=False)
     outstanding_balance = Column(Numeric(10, 2), nullable=False)
-    payment_status = Column(String(30), default="unpaid", nullable=False)
+    payment_status = Column(String(30), default="unpaid", nullable=False)  # unpaid, partially_paid, paid, refunded, cancelled
+    notes = Column(Text, nullable=True)
 
 
 class Payment(Base, TimestampMixin):
@@ -293,8 +295,10 @@ class Payment(Base, TimestampMixin):
     branch_id = Column(String(36), ForeignKey("branches.id", ondelete="CASCADE"), nullable=False)
     receipt_number = Column(String(50), unique=True, nullable=False, index=True)
     amount = Column(Numeric(10, 2), nullable=False)
-    payment_mode = Column(String(50), default="cash", nullable=False)
+    payment_mode = Column(String(50), default="cash", nullable=False)  # cash, card, upi, cheque, bank_transfer
     reference_number = Column(String(100), nullable=True)
+    is_refund = Column(Boolean, default=False, nullable=False)
+    notes = Column(Text, nullable=True)
     collected_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
 
@@ -305,10 +309,22 @@ class FinancialRegister(Base, TimestampMixin):
     organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     branch_id = Column(String(36), ForeignKey("branches.id", ondelete="CASCADE"), nullable=False, index=True)
     register_type = Column(String(50), nullable=False, index=True)  # case, bank, expense, petty_cash, date_wise
+    transaction_date = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    serial_no = Column(Integer, nullable=True)
+    cheque_no = Column(String(50), nullable=True)
+    particulars = Column(String(255), nullable=True)
     amount = Column(Numeric(10, 2), nullable=False)
     direction = Column(String(10), nullable=False)  # credit, debit
-    reference_type = Column(String(50), nullable=True)
+    regular_or_emergency = Column(String(50), default="regular", nullable=True)  # regular, emergency
+    payment_mode = Column(String(50), default="cash", nullable=True)  # cash, cheque, online, card, upi
+    due_or_paid = Column(String(50), default="paid", nullable=True)  # paid, due
+    patient_name = Column(String(255), nullable=True)
+    case_number = Column(String(50), nullable=True)
+    receipt_number = Column(String(50), nullable=True)
+    reference_type = Column(String(50), nullable=True)  # invoice, payment, case, manual
     reference_id = Column(String(36), nullable=True)
+    remark = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     created_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
 

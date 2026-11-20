@@ -24,6 +24,14 @@ import { PatientsListPage } from "@/features/patients/PatientsListPage";
 import { PatientProfilePage } from "@/features/patients/PatientProfilePage";
 import { CasesListPage } from "@/features/patients/CasesListPage";
 import { CaseRegistrationWizard } from "@/features/patients/CaseRegistrationWizard";
+import { InvoicesListPage } from "@/features/billing/InvoicesListPage";
+import { CaseRegisterPage } from "@/features/registers/CaseRegisterPage";
+import { BankRegisterPage } from "@/features/registers/BankRegisterPage";
+import { ExpenseRegisterPage } from "@/features/registers/ExpenseRegisterPage";
+import { PettyCashPage } from "@/features/registers/PettyCashPage";
+import { DateWiseRegisterPage } from "@/features/registers/DateWiseRegisterPage";
+import { ChargesReportPage } from "@/features/reports/ChargesReportPage";
+import { OtherChargesReportPage } from "@/features/reports/OtherChargesReportPage";
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -47,6 +55,31 @@ export const AppRoutes: React.FC = () => {
           <Route element={<ProtectedRoute requiredPermission="patient_registration:add" />}>
             <Route path="/cases/new" element={<CaseRegistrationWizard />} />
             <Route path="/patients/new" element={<Navigate to="/cases/new" replace />} />
+          </Route>
+
+          {/* Phase 4: Billing & Financial Invoices */}
+          <Route element={<ProtectedRoute requiredPermission="financial_registers:view" />}>
+            <Route path="/billing" element={<InvoicesListPage />} />
+            <Route path="/billing/invoices" element={<InvoicesListPage />} />
+            <Route path="/billing/payments" element={<InvoicesListPage />} />
+          </Route>
+
+          {/* Phase 4: Financial Registers */}
+          <Route element={<ProtectedRoute requiredPermission="financial_registers:view" />}>
+            <Route path="/registers/case" element={<CaseRegisterPage />} />
+            <Route path="/registers/bank" element={<BankRegisterPage />} />
+            <Route path="/registers/expense" element={<ExpenseRegisterPage />} />
+            <Route path="/registers/petty-cash" element={<PettyCashPage />} />
+            <Route path="/registers/date-wise" element={<DateWiseRegisterPage />} />
+          </Route>
+
+          {/* Phase 4: Financial & Charges Reports */}
+          <Route element={<ProtectedRoute requiredPermission="charges_report:view" />}>
+            <Route path="/reports/charges" element={<ChargesReportPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="other_charges_report:view" />}>
+            <Route path="/reports/other-charges" element={<OtherChargesReportPage />} />
           </Route>
 
           {/* Admin Routes with Permission Checks */}
@@ -113,4 +146,3 @@ export const AppRoutes: React.FC = () => {
     </Routes>
   );
 };
-

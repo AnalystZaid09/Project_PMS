@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, desc, func
 
 from app.core.audit import log_audit_action
-from app.core.generators import generate_uhid, generate_case_number
+from app.core.generators import generate_uhid, generate_case_number, generate_invoice_number
 from app.core.rbac import AuthenticatedUserContext, get_current_user, require_permission
 from app.db.session import get_db
 from app.models.schema_all import (
@@ -466,6 +466,23 @@ def register_case_wizard(
             amount=oc["amount"],
         )
         db.add(case_other)
+
+    # 8. Automatically generate Invoice for this case
+    inv_number = generate_invoice_number(db, current_user.organization_id)
+    case_invoice = Invoice(
+        organization_id=current_user.organization_id,
+        branch_id=target_branch_id,
+        case_id=new_case.id,
+        invoice_number=inv_number,
+        subtotal=total_gross,
+        discount_total=total_discount,
+        tax_total=total_tax,
+        grand_total=net_total,
+        paid_amount=Decimal("0.00"),
+        outstanding_balance=net_total,
+        payment_status="unpaid",
+    )
+    db.add(case_invoice)
 
     db.commit()
     db.refresh(new_case)

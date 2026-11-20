@@ -2,12 +2,15 @@ from fastapi import APIRouter
 from app.api.v1 import (
     audit_logs,
     auth,
+    billing,
     branches,
     cases,
     health,
     masters,
     patients,
     permissions,
+    registers,
+    reports,
     roles,
     settings,
     users,
@@ -24,6 +27,9 @@ api_router.include_router(permissions.router)
 api_router.include_router(masters.router)
 api_router.include_router(patients.router)
 api_router.include_router(cases.router)
+api_router.include_router(billing.router)
+api_router.include_router(registers.router)
+api_router.include_router(reports.router)
 api_router.include_router(settings.router)
 api_router.include_router(audit_logs.router)
 

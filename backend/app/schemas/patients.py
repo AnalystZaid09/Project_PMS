@@ -257,3 +257,4 @@ class PatientProfileResponse(BaseModel):
     timeline: List[TimelineEvent]
     total_visits: int
     total_billed: Decimal
+

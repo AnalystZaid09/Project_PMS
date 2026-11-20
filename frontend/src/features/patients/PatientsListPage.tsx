@@ -224,3 +224,4 @@ export const PatientsListPage: React.FC = () => {
     </div>
   );
 };
+

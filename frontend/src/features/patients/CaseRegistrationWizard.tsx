@@ -1278,3 +1278,4 @@ export const CaseRegistrationWizard: React.FC = () => {
     </div>
   );
 };
+

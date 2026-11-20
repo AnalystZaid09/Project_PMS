@@ -114,3 +114,4 @@ def downgrade() -> None:
     op.drop_table('case_items')
     op.drop_table('cases')
     op.drop_table('patients')
+

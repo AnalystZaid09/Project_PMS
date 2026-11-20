@@ -6,9 +6,10 @@ interface DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
+  className?: string;
 }
 
-export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
+export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children, className }) => {
   if (!open) return null;
 
   return (
@@ -19,7 +20,7 @@ export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) 
         onClick={() => onOpenChange(false)}
       />
       {/* Content */}
-      <div className="relative z-50 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl transition-all">
+      <div className={cn("relative z-50 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl transition-all", className)}>
         {children}
       </div>
     </div>
@@ -27,23 +28,31 @@ export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) 
 };
 
 export const DialogHeader: React.FC<{
-  title: string;
+  title?: string;
   description?: string;
-  onClose: () => void;
-}> = ({ title, description, onClose }) => (
-  <div className="flex items-start justify-between pb-4 border-b border-slate-100">
-    <div>
-      <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-      {description && <p className="text-sm text-slate-500 mt-1">{description}</p>}
+  onClose?: () => void;
+  children?: React.ReactNode;
+}> = ({ title, description, onClose, children }) => {
+  if (children) {
+    return <div className="pb-4 border-b border-slate-100">{children}</div>;
+  }
+  return (
+    <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+      <div>
+        {title && <h3 className="text-lg font-semibold text-slate-900">{title}</h3>}
+        {description && <p className="text-sm text-slate-500 mt-1">{description}</p>}
+      </div>
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      )}
     </div>
-    <button
-      onClick={onClose}
-      className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-    >
-      <X className="h-5 w-5" />
-    </button>
-  </div>
-);
+  );
+};
 
 export const DialogFooter: React.FC<{ children: React.ReactNode; className?: string }> = ({
   children,
@@ -53,4 +62,3 @@ export const DialogFooter: React.FC<{ children: React.ReactNode; className?: str
     {children}
   </div>
 );
-

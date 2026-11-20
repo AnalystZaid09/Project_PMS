@@ -6,7 +6,7 @@
 | **Phase 1** | Authentication, Org, Branches & RBAC | ✅ **Completed** | JWT Auth, Org/Branch scoping, Users, Roles, Permissions matrix, Protected routes, RBAC tests (15/15 passed) |
 | **Phase 2** | Master Data Management | ✅ **Completed** | Departments, Cities, Categories, Doctors, Tariffs, Investigations, Charges, Templates (27/27 tests passed) |
 | **Phase 3** | Patient & Case Workflow | ✅ **Completed** | Duplicate check, Patient Profile & Timeline, 5-Step Case Wizard, Tariffs, Ancillary Charges, Case Register (35/35 tests passed) |
-| **Phase 4** | Billing & Financial Registers | 📋 Planned | Server-side invoice calc, receipts, split payments, refunds, cash/bank ledgers |
+| **Phase 4** | Billing & Financial Registers | ✅ **Completed** | Server-side invoice calc, receipts, split payments, refunds, cash/bank ledgers, charges reports (45/45 tests passed) |
 | **Phase 5** | Reports & Verification Workflow | 📋 Planned | Template editor, review/finalize lifecycle, versioning, branded PDF |
 | **Phase 6** | Analytics, Communication & Audit | 📋 Planned | Dashboard KPIs, internal chat, email templates, audit trail |
 | **Phase 7** | Backup, Hardening & Deployment | 📋 Planned | Backup/restore script, security audit, E2E tests, production containerization |
@@ -147,4 +147,59 @@
 - [x] Automated Acceptance & Unit Testing:
   - 8 automated tests in `backend/tests/test_patients_cases.py` verifying duplicate checks, UHID generation, server calculation math, date filters, timeline events, and cancellation guards.
   - Total test suite: **35 passed** (100% pass rate).
+  - TypeScript & Vite build: **0 errors** cleanly bundled in production mode.
+
+---
+
+### Phase 4: Billing & Financial Registers
+- [x] Reference Screenshot Mappings & Requirements:
+  - `PMS/Fourth_Tab/case_register.png` -> Case Register screen with chronological case transactions, receipt numbers, patient names, charges, date range filters, export to Excel, and summary footer (`COUNT = <n>`, `SUM = <total>`).
+  - `PMS/Fourth_Tab/bank_register.png` -> Bank Register screen with serial numbers, dates, cheque numbers, particulars, amounts, debit/credit flow, regular/emergency badges, cash/cheque indicators, remarks, add modal, and summary footer (`COUNT`, `CREDIT`, `DEBIT`, `NET`).
+  - `PMS/Fourth_Tab/expense_register.png` -> Expense Register screen with operating expense vouchers, vendor bills, utility payments, due/paid status, add modal, and summary footer (`COUNT`, `SUM`).
+  - `PMS/Fourth_Tab/petty_cash.png` -> Petty Cash Register screen with daily petty cash float, supplies, conveyance reimbursements, credit/debit indicators, add modal, and summary footer (`COUNT`, `CREDIT FLOAT`, `DEBIT OUTFLOW`, `NET BALANCE`).
+  - `PMS/Fourth_Tab/date_wise_register.png` -> Date Wise Register screen with daily total reconciliation, case count, sequential start and end receipt numbers (`START AT`, `RECEIPTNOEND`), date range filters, export to Excel, and summary footer.
+  - `PMS/Second_Tab/Charges_Report.png` -> Charges Report with date filters, Department dropdown, Faculty/Doctor dropdown, Misc checkbox, printable view, and export to Excel.
+  - `PMS/Second_Tab/Other_Charges_Report.png` -> Other Charges Report with date filters, Category dropdown, printable view, and export to Excel.
+  - Core Blueprint Billing Section -> Automated invoice creation upon case registration, server-side tariff computation, split payment collection (Cash, Card, UPI, Cheque, Bank Transfer), receipts generation (`APX-REC-YYYYMMDD-XXXX`), partial payments, and refund processing.
+- [x] Relational Database Modelling & Alembic Migrations:
+  - Authored `004_billing_and_finance.py` Alembic migration.
+  - Updated `Invoice` and `Payment` models with structured financial fields.
+  - Extended `FinancialRegister` model with `serial_no`, `transaction_date`, `cheque_no`, `particulars`, `amount`, `direction`, `debit_or_credit`, `regular_or_emergency`, `by_cash_or_cheque`, `due_or_paid`, `patient_name`, `case_number`, `receipt_number`, and `remark`.
+  - Sequential unique generators: `generate_invoice_number` (`APX-INV-YYYYMMDD-XXXX`) and `generate_receipt_number` (`APX-REC-YYYYMMDD-XXXX`).
+- [x] Backend API Endpoints (`backend/app/api/v1/billing.py`, `registers.py`, `reports.py`):
+  - `GET /invoices`: Invoices list with search (invoice #, case #, patient, UHID), status filter, and date filters.
+  - `GET /invoices/{id}`: Full invoice details with itemized investigations, ancillary charges, and payment receipt history.
+  - `GET /invoices/by-case/{case_id}`: Look up invoice by clinical case ID.
+  - `GET /invoices/summary/stats`: Executive KPI metrics (Total Invoices, Paid, Unpaid, Partial, Total Billed, Total Collected, Total Due).
+  - `POST /invoices/{id}/payments`: Server-side payment collection with balance updates, receipt generation, and append-only financial ledger logging (case and bank registers).
+  - `POST /invoices/{id}/refund`: Controlled patient refunds with validation against collected amounts, reason requirement, and audit trails.
+  - `GET /registers/case`: Chronological case register with aggregated count and charge totals.
+  - `GET /registers/bank` & `POST /registers/bank`: Bank register read and manual voucher creation.
+  - `GET /registers/expense` & `POST /registers/expense`: Operational expense register and voucher creation.
+  - `GET /registers/petty-cash` & `POST /registers/petty-cash`: Petty cash register with float replenishment and disbursement tracking.
+  - `GET /registers/date-wise`: Daily aggregated collections with starting and ending receipt numbers.
+  - `GET /reports/charges`: Investigation revenue partitioned by faculty and department.
+  - `GET /reports/other-charges`: Ancillary charge collections by category.
+- [x] Synthetic Seed Data:
+  - Pre-seeded 5 clinical invoices matching the registered cases.
+  - Seeded payments (cash, UPI, card) with generated receipt numbers.
+  - Seeded bank register deposits and clearing entries.
+  - Seeded operational expense vouchers (biomedical waste disposal, clinical gloves/consumables, equipment calibration, generator diesel, facility maintenance).
+  - Seeded petty cash disbursements and float top-ups.
+- [x] Production Frontend Financial SaaS Screens:
+  - `InvoicesListPage.tsx` (`/billing` & `/billing/payments`): KPI cards, search, date range filters, status badges, payment collection modal with mode selection, refund modal with validation, and printable tax invoice & receipt preview dialog with "Apex Health Diagnostics" branding.
+  - `CaseRegisterPage.tsx` (`/registers/case`): Exact layout of `case_register.png` with date filters, search, Excel export, and summary footer.
+  - `BankRegisterPage.tsx` (`/registers/bank`): Exact layout of `bank_register.png` with Add Entry modal, direction filters, Excel export, and summary footer.
+  - `ExpenseRegisterPage.tsx` (`/registers/expense`): Exact layout of `expense_register.png` with Add Voucher modal, due/paid status, Excel export, and summary footer.
+  - `PettyCashPage.tsx` (`/registers/petty-cash`): Exact layout of `petty_cash.png` with Add Entry modal, flow filters, Excel export, and summary footer.
+  - `DateWiseRegisterPage.tsx` (`/registers/date-wise`): Exact layout of `date_wise_register.png` with date range filters, daily totals, start/end receipts, Excel export, and summary footer.
+  - `ChargesReportPage.tsx` (`/reports/charges`): Exact layout of `Charges_Report.png` with department filter, doctor filter, misc filter, print trigger, and Excel export.
+  - `OtherChargesReportPage.tsx` (`/reports/other-charges`): Exact layout of `Other_Charges_Report.png` with category filter, print trigger, and Excel export.
+  - `exportUtils.ts`: Excel-compatible CSV export helper with UTF-8 BOM.
+- [x] Routing & Navigation:
+  - Mounted all billing, registers, and reports routes in `frontend/src/routes/AppRoutes.tsx` with RBAC permissions (`financial_registers:view`, `charges_report:view`, `other_charges_report:view`).
+  - Updated `Sidebar.tsx` navigation under "Billing & Finance", "Registers", and "Reports & Analytics".
+- [x] Automated Acceptance & Unit Testing:
+  - 10 automated backend tests in `backend/tests/test_billing_registers.py` verifying invoice auto-creation, payment collection, receipts, refund guards, register aggregation math, date-wise receipt ranges, and charges reports.
+  - Total test suite: **45 passed** (100% pass rate in 30.73s).
   - TypeScript & Vite build: **0 errors** cleanly bundled in production mode.

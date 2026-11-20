@@ -78,8 +78,8 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
       icon: Receipt,
       permission: "financial_registers:view",
       children: [
-        { title: "New Bill", href: "/billing/new", permission: "patient_registration:add" },
-        { title: "Payment Ledger", href: "/billing/payments", permission: "financial_registers:view" },
+        { title: "Invoices & Billing", href: "/billing", permission: "financial_registers:view" },
+        { title: "Collections & Dues", href: "/billing/payments", permission: "financial_registers:view" },
       ],
     },
     {
@@ -87,7 +87,6 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
       icon: FileBarChart,
       permission: "charges_report:view",
       children: [
-        { title: "Patient Reports", href: "/reports/clinical", permission: "patient_report:view" },
         { title: "Charges Report", href: "/reports/charges", permission: "charges_report:view" },
         { title: "Other Charges Report", href: "/reports/other-charges", permission: "other_charges_report:view" },
       ],
@@ -97,10 +96,11 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
       icon: BookOpen,
       permission: "financial_registers:view",
       children: [
-        { title: "Case Register", href: "/cases", permission: "financial_registers:view" },
+        { title: "Case Register", href: "/registers/case", permission: "financial_registers:view" },
         { title: "Bank Register", href: "/registers/bank", permission: "financial_registers:view" },
         { title: "Expense Register", href: "/registers/expense", permission: "financial_registers:view" },
         { title: "Petty Cash", href: "/registers/petty-cash", permission: "financial_registers:view" },
+        { title: "Date Wise Register", href: "/registers/date-wise", permission: "financial_registers:view" },
       ],
     },
     {

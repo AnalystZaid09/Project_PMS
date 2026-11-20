@@ -417,3 +417,4 @@ export const PatientRegistrationModal: React.FC<PatientRegistrationModalProps> =
     </Dialog>
   );
 };
+
