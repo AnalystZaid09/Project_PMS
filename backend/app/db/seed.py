@@ -12,7 +12,8 @@ from app.models.schema_all import (
     InvestigationCategory, Investigation, InvestigationBranchPrice,
     OtherChargeType, EmailTemplate, ReportTemplate,
     Patient, Case, CaseItem, CaseOtherCharge, ClinicalReport, ReportVersion, ReportAttachment,
-    Invoice, Payment, FinancialRegister
+    Invoice, Payment, FinancialRegister,
+    ChatMessage, Notification, EmailLog
 )
 
 DEFAULT_PASSWORD = "Admin@123"
@@ -110,6 +111,17 @@ PERMISSIONS_DEFINITION = [
     ("general_settings", "view", "general_settings:view", "View general application settings"),
     ("general_settings", "update", "general_settings:update", "Update application branding and settings"),
     ("audit_logs", "view", "audit_logs:view", "View audit trail and user activity"),
+
+    # Analytics & Executive Dashboard
+    ("analytics", "view", "analytics:view", "View executive dashboard analytics and graphs"),
+
+    # Internal Staff Chat
+    ("chat", "view", "chat:view", "Access internal staff chat and announcements"),
+    ("chat", "send", "chat:send", "Send internal team chat messages"),
+
+    # Direct Email Communication
+    ("send_email", "view", "send_email:view", "View email communication logs"),
+    ("send_email", "send", "send_email:send", "Compose and dispatch patient/doctor emails"),
 ]
 
 
@@ -201,29 +213,34 @@ def seed_database(db: Session):
         ("Receptionist", "receptionist", "Front desk registration, case booking, and patient history", True, [
             "patient_registration:view", "patient_registration:add", "patient_registration:update", "patient_registration:export",
             "view_patient_history:view", "charges_report:view", "charges_report:print",
+            "analytics:view", "chat:view", "chat:send", "send_email:view", "send_email:send",
         ]),
         ("Billing Executive", "billing-executive", "Front desk billing, payment collection, and charges reports", True, [
             "patient_registration:view", "patient_registration:add", "patient_registration:update",
             "charges_report:view", "charges_report:print", "charges_report:export",
             "other_charges_report:view", "other_charges_report:print", "other_charges_report:export",
             "financial_registers:view", "financial_registers:add",
+            "analytics:view", "chat:view", "chat:send", "send_email:view", "send_email:send",
         ]),
         ("Report Writer", "report-writer", "Prepares and drafts clinical diagnostic investigation reports", True, [
             "patient_report:view", "patient_report:add", "patient_report:update", "view_patient_history:view",
-            "investigation_master:view",
+            "investigation_master:view", "analytics:view", "chat:view", "chat:send",
         ]),
         ("Reporting Doctor", "reporting-doctor", "Reviewing consultant who verifies and finalizes clinical reports", True, [
             "patient_report:view", "patient_report:update", "patient_report:verify", "patient_report:finalize",
-            "view_patient_history:view", "charges_report:view",
+            "view_patient_history:view", "charges_report:view", "analytics:view", "chat:view", "chat:send",
+            "send_email:view", "send_email:send",
         ]),
         ("Accountant", "accountant", "Financial registers, vouchers, and revenue reports", True, [
             "charges_report:view", "charges_report:print", "charges_report:export",
             "other_charges_report:view", "other_charges_report:print", "other_charges_report:export",
             "financial_registers:view", "financial_registers:add", "financial_registers:export",
+            "analytics:view", "chat:view", "chat:send",
         ]),
         ("Auditor", "auditor", "Read-only access for compliance and inspection", True, [
             "patient_registration:view", "patient_report:view", "charges_report:view", "other_charges_report:view",
             "financial_registers:view", "audit_logs:view", "user_master:view", "branch_master:view",
+            "analytics:view", "chat:view",
         ]),
     ]
 
@@ -1013,6 +1030,100 @@ def _seed_master_data(db: Session, org: Organization, branches: dict):
                 payment_mode=mode,
                 due_or_paid=due_paid,
                 remark=remark,
+            ))
+
+    # 4. Phase 6: Sample Chat Messages, Notifications & Email Logs
+    admin_u = db.query(User).filter(User.username == "admin").first()
+    doc_u = db.query(User).filter(User.username == "drmarcus").first()
+    recep_u = db.query(User).filter(User.username == "receptionist").first()
+    writer_u = db.query(User).filter(User.username == "writer").first()
+
+    first_case = db.query(Case).filter(Case.organization_id == org.id).first()
+    first_report = db.query(ClinicalReport).join(Case, ClinicalReport.case_id == Case.id).filter(Case.organization_id == org.id).first()
+
+    if admin_u and doc_u and recep_u and writer_u:
+        # Sample Chat Messages
+        chat_count = db.query(ChatMessage).filter(ChatMessage.organization_id == org.id).count()
+        if chat_count == 0:
+            sample_messages = [
+                (admin_u.id, None, "general", "Welcome to Apex Health Diagnostics PMS. System migration to Phase 6 operational.", None, None),
+                (recep_u.id, None, "general", "Front desk active. Today's morning OPD registration is running smoothly across all branches.", None, None),
+                (doc_u.id, None, "clinical-updates", "Reviewing urgent abdominal scans for today. Please flag any emergency contrast studies.", first_case.id if first_case else None, None),
+                (writer_u.id, None, "clinical-updates", "Report drafted for complete blood count and submitted for doctor sign-off.", first_case.id if first_case else None, first_report.id if first_report else None),
+                (recep_u.id, None, "billing", "Split payment collected via UPI and cash for patient registration.", first_case.id if first_case else None, None),
+                # Direct Message between receptionist and doctor
+                (recep_u.id, doc_u.id, None, "Dr. Marcus, patient Ananya Deshmukh is waiting for ultrasound scan.", first_case.id if first_case else None, None),
+                (doc_u.id, recep_u.id, None, "Acknowledged Emily, preparing sonography room 2 now.", first_case.id if first_case else None, None),
+            ]
+            for s_id, r_id, chn, cnt, c_id, rep_id in sample_messages:
+                db.add(ChatMessage(
+                    organization_id=org.id,
+                    branch_id=branch_id,
+                    sender_id=s_id,
+                    recipient_id=r_id,
+                    channel=chn,
+                    content=cnt,
+                    case_id=c_id,
+                    report_id=rep_id,
+                    is_read=False,
+                ))
+
+        # Sample Notifications
+        notif_count = db.query(Notification).filter(Notification.organization_id == org.id).count()
+        if notif_count == 0:
+            db.add(Notification(
+                organization_id=org.id,
+                user_id=doc_u.id,
+                title="Emergency Case Assigned",
+                message="Emergency ultrasound scan registered for patient Kavita Iyer.",
+                notification_type="urgent",
+                link_url="/cases",
+                is_read=False,
+            ))
+            db.add(Notification(
+                organization_id=org.id,
+                user_id=doc_u.id,
+                title="Diagnostic Report Pending Review",
+                message="Complete Blood Count report drafted by Alex Rivera awaiting doctor verification.",
+                notification_type="clinical",
+                link_url="/reports/clinical",
+                is_read=False,
+            ))
+            db.add(Notification(
+                organization_id=org.id,
+                user_id=recep_u.id,
+                title="Diagnostic Report Finalized",
+                message="Digital Chest X-Ray report finalized and signed off by Dr. Marcus Vance. Ready for delivery.",
+                notification_type="info",
+                link_url="/reports/clinical",
+                is_read=False,
+            ))
+
+        # Sample Email Logs
+        email_count = db.query(EmailLog).filter(EmailLog.organization_id == org.id).count()
+        if email_count == 0:
+            db.add(EmailLog(
+                organization_id=org.id,
+                branch_id=branch_id,
+                sender_id=doc_u.id,
+                recipient_email="rajesh.mehta@example.com",
+                recipient_name="Rajesh Mehta",
+                subject="Your Diagnostic Test Report is Ready (Case #APX-CAS-20261120-0001)",
+                body="Dear Rajesh Mehta,\n\nYour clinical diagnostic report has been verified by our medical specialists and is ready for online viewing.\n\nThank you,\nApex Health Diagnostics",
+                case_id=first_case.id if first_case else None,
+                report_id=first_report.id if first_report else None,
+                status="delivered",
+            ))
+            db.add(EmailLog(
+                organization_id=org.id,
+                branch_id=branch_id,
+                sender_id=recep_u.id,
+                recipient_email="dr.sharma@apollo.org",
+                recipient_name="Dr. Vikram Sharma",
+                subject="Clinical Referral Summary (Patient: Ananya Deshmukh)",
+                body="Dear Dr. Vikram Sharma,\n\nHere is the diagnostic study summary for patient Ananya Deshmukh referred to Apex Central Diagnostic Hospital.",
+                case_id=first_case.id if first_case else None,
+                status="sent",
             ))
 
     db.commit()

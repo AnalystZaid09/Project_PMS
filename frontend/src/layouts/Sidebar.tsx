@@ -16,6 +16,8 @@ import {
   Sliders,
   History,
   Menu,
+  MessageSquare,
+  Mail,
 } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -92,6 +94,15 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
         { title: "Other Charges Report", href: "/reports/other-charges", permission: "other_charges_report:view" },
         { title: "Referring Doctor Report", href: "/reports/referring-doctor", permission: "charges_report:view" },
         { title: "Reporting Doctor Report", href: "/reports/reporting-doctor", permission: "charges_report:view" },
+      ],
+    },
+    {
+      title: "Communication",
+      icon: MessageSquare,
+      permission: "chat:view",
+      children: [
+        { title: "Staff Team Chat", href: "/communication/chat", permission: "chat:view" },
+        { title: "Email Dispatch & Logs", href: "/communication/emails", permission: "send_email:view" },
       ],
     },
     {

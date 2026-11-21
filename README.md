@@ -116,7 +116,7 @@ Run the backend Pytest test suite:
 python -m pytest backend/tests -v
 ```
 
-All **54 automated tests** pass with 100% success rate:
+All **62 automated tests** pass with 100% success rate:
 - Health checks and DB connection
 - JWT Bearer authentication and token claim validation
 - Password hashing security (Bcrypt)
@@ -159,6 +159,13 @@ All **54 automated tests** pass with 100% success rate:
 - Referring Doctor commission audit report (`refering_doctor_report.png`)
 - Reporting Doctor tariff and consultation fee report (`report_doctor_report.png`)
 - Clinical reports worklist with KPI counters and email dispatch trigger
+- Real-time executive clinical dashboard (`PMS_Dashboard.png`) with period-aware KPI cards
+- Interactive 14-day revenue & collection velocity chart and department distribution (`graph.png`)
+- Emergency cases in progress action queue and pending doctor verifications queue
+- Internal Clinical Team Messenger (`seventh_tab_chat.png`) with channels, staff DMs, and case tagging
+- Real-time In-App Notification Center (`Header.tsx`) with alert type badges and navigation
+- Direct Email Dispatcher modal (`send_email.png`) with dynamic placeholders and outbound logs (`EmailLogsPage.tsx`)
+- Comprehensive Compliance Audit Trail (`nineth_tab_user_activity.png`) with domain counters, multi-field filters, and state mutation JSON inspect modal
 
 Build the frontend bundle:
 ```powershell

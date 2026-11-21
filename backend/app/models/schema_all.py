@@ -357,3 +357,54 @@ class FinancialRegister(Base, TimestampMixin):
     created_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
 
+# ==============================================================================
+# Phase 6: Analytics, Communication, and Audit Models
+# ==============================================================================
+
+class ChatMessage(Base, TimestampMixin):
+    __tablename__ = "chat_messages"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    branch_id = Column(String(36), ForeignKey("branches.id", ondelete="CASCADE"), nullable=True, index=True)
+    sender_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    recipient_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    channel = Column(String(50), nullable=True, index=True)  # "general", "clinical-updates", "billing"
+    content = Column(Text, nullable=False)
+    case_id = Column(String(36), ForeignKey("cases.id", ondelete="SET NULL"), nullable=True)
+    report_id = Column(String(36), ForeignKey("clinical_reports.id", ondelete="SET NULL"), nullable=True)
+    is_read = Column(Boolean, default=False, nullable=False)
+
+
+class Notification(Base, TimestampMixin):
+    __tablename__ = "notifications"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    notification_type = Column(String(50), default="info", nullable=False)  # info, warning, urgent, clinical, billing
+    link_url = Column(String(255), nullable=True)
+    is_read = Column(Boolean, default=False, nullable=False)
+
+
+class EmailLog(Base, TimestampMixin):
+    __tablename__ = "email_logs"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    branch_id = Column(String(36), ForeignKey("branches.id", ondelete="CASCADE"), nullable=True, index=True)
+    sender_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    recipient_email = Column(String(255), nullable=False)
+    recipient_name = Column(String(200), nullable=True)
+    subject = Column(String(255), nullable=False)
+    body = Column(Text, nullable=False)
+    template_id = Column(String(36), ForeignKey("email_templates.id", ondelete="SET NULL"), nullable=True)
+    case_id = Column(String(36), ForeignKey("cases.id", ondelete="SET NULL"), nullable=True)
+    report_id = Column(String(36), ForeignKey("clinical_reports.id", ondelete="SET NULL"), nullable=True)
+    status = Column(String(50), default="sent", nullable=False)  # sent, failed, delivered
+    error_message = Column(Text, nullable=True)
+
+
+

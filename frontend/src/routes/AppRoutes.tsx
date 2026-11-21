@@ -36,6 +36,8 @@ import { ClinicalReportsListPage } from "@/features/reports/ClinicalReportsListP
 import { PatientReportEditorPage } from "@/features/reports/PatientReportEditorPage";
 import { ReferringDoctorReportPage } from "@/features/reports/ReferringDoctorReportPage";
 import { ReportingDoctorReportPage } from "@/features/reports/ReportingDoctorReportPage";
+import { InternalChatPage } from "@/features/communication/InternalChatPage";
+import { EmailLogsPage } from "@/features/communication/EmailLogsPage";
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -92,6 +94,15 @@ export const AppRoutes: React.FC = () => {
           <Route element={<ProtectedRoute requiredPermission="patient_report:view" />}>
             <Route path="/reports/clinical" element={<ClinicalReportsListPage />} />
             <Route path="/reports/editor/:id" element={<PatientReportEditorPage />} />
+          </Route>
+
+          {/* Phase 6: Communication, Internal Chat & Email Transmission */}
+          <Route element={<ProtectedRoute requiredPermission="chat:view" />}>
+            <Route path="/communication/chat" element={<InternalChatPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="send_email:view" />}>
+            <Route path="/communication/emails" element={<EmailLogsPage />} />
           </Route>
 
           {/* Admin Routes with Permission Checks */}

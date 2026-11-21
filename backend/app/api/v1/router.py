@@ -15,6 +15,10 @@ from app.api.v1 import (
     roles,
     settings,
     users,
+    analytics,
+    chat,
+    notifications,
+    emails,
 )
 
 api_router = APIRouter()
@@ -34,5 +38,10 @@ api_router.include_router(registers.router)
 api_router.include_router(reports.router)
 api_router.include_router(settings.router)
 api_router.include_router(audit_logs.router)
+api_router.include_router(analytics.router)
+api_router.include_router(chat.router)
+api_router.include_router(notifications.router)
+api_router.include_router(emails.router)
+
 
 

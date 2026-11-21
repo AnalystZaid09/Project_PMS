@@ -15,6 +15,7 @@ class AuthenticatedUserContext:
     def __init__(self, user: User, permissions: List[str], role_slugs: List[str], branch_ids: List[str], active_branch_id: Optional[str] = None):
         self.user = user
         self.id = user.id
+        self.user_id = user.id
         self.organization_id = user.organization_id
         self.username = user.username
         self.email = user.email

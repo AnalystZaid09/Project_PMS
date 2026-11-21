@@ -53,6 +53,8 @@ export interface UserDetail {
   branches: BranchInfo[];
 }
 
+export type UserItem = UserDetail;
+
 export interface Permission {
   id: string;
   module: string;
@@ -702,3 +704,154 @@ export interface ReportingDoctorReportData {
   total_charges: number;
   total_fees: number;
 }
+
+// ------------------------------------------------------------------------------
+// Phase 6: Analytics, Communication, Notifications & Enhanced Audit
+// ------------------------------------------------------------------------------
+
+export interface DashboardKpiSummary {
+  total_patients: number;
+  today_cases: number;
+  week_cases: number;
+  month_cases: number;
+  emergency_cases: number;
+  draft_reports: number;
+  pending_verification_reports: number;
+  finalized_reports: number;
+  today_revenue: number;
+  month_revenue: number;
+  total_revenue: number;
+  outstanding_dues: number;
+}
+
+export interface RevenueTrendItem {
+  date: string;
+  revenue: number;
+  collections: number;
+}
+
+export interface DepartmentDistributionItem {
+  department_id: string;
+  department_name: string;
+  case_count: number;
+  revenue: number;
+}
+
+export interface PriorityBreakdownItem {
+  priority: string;
+  count: number;
+}
+
+export interface TopInvestigationItem {
+  investigation_id: string;
+  investigation_code: string;
+  investigation_name: string;
+  count: number;
+  total_billed: number;
+}
+
+export interface EmergencyQueueItem {
+  id: string;
+  case_number: string;
+  patient_uhid: string;
+  patient_name: string;
+  priority: string;
+  status: string;
+  visit_datetime: string;
+  department_name?: string;
+}
+
+export interface PendingVerificationQueueItem {
+  id: string;
+  report_number: string;
+  case_number: string;
+  patient_name: string;
+  investigation_name: string;
+  status: string;
+  submitted_at: string;
+}
+
+export interface DashboardAnalyticsData {
+  kpis: DashboardKpiSummary;
+  revenue_trends: RevenueTrendItem[];
+  department_distribution: DepartmentDistributionItem[];
+  priority_breakdown: PriorityBreakdownItem[];
+  top_investigations: TopInvestigationItem[];
+  emergency_queue: EmergencyQueueItem[];
+  pending_verifications: PendingVerificationQueueItem[];
+}
+
+export interface ChatChannelItem {
+  id: string;
+  name: string;
+  display_name: string;
+  description: string;
+  unread_count: number;
+  last_message?: string;
+  last_message_at?: string;
+}
+
+export interface ChatUserItem {
+  id: string;
+  full_name: string;
+  username: string;
+  role: string;
+  is_online: boolean;
+  unread_count: number;
+}
+
+export interface ChatMessageItem {
+  id: string;
+  sender_id: string;
+  sender_name: string;
+  sender_role: string;
+  recipient_id?: string;
+  recipient_name?: string;
+  channel?: string;
+  content: string;
+  case_id?: string;
+  case_number?: string;
+  report_id?: string;
+  report_number?: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  notification_type: "info" | "warning" | "urgent" | "clinical" | "billing";
+  link_url?: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface NotificationsListResponse {
+  unread_count: number;
+  items: NotificationItem[];
+}
+
+export interface EmailLogItem {
+  id: string;
+  recipient_email: string;
+  recipient_name?: string;
+  subject: string;
+  body: string;
+  sender_name?: string;
+  status: string;
+  case_id?: string;
+  case_number?: string;
+  report_id?: string;
+  report_number?: string;
+  created_at: string;
+}
+
+export interface AuditLogStats {
+  total_logs: number;
+  login_events: number;
+  clinical_events: number;
+  financial_events: number;
+  master_events: number;
+}
+
