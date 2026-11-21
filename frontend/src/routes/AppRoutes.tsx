@@ -38,6 +38,7 @@ import { ReferringDoctorReportPage } from "@/features/reports/ReferringDoctorRep
 import { ReportingDoctorReportPage } from "@/features/reports/ReportingDoctorReportPage";
 import { InternalChatPage } from "@/features/communication/InternalChatPage";
 import { EmailLogsPage } from "@/features/communication/EmailLogsPage";
+import { BackupsPage } from "@/features/admin/backups/BackupsPage";
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -120,6 +121,7 @@ export const AppRoutes: React.FC = () => {
 
           <Route element={<ProtectedRoute requiredPermission="general_settings:view" />}>
             <Route path="/admin/settings" element={<SettingsPage />} />
+            <Route path="/admin/backups" element={<BackupsPage />} />
           </Route>
 
           <Route element={<ProtectedRoute requiredPermission="audit_logs:view" />}>

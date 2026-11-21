@@ -13,7 +13,8 @@ from app.models.schema_all import (
     OtherChargeType, EmailTemplate, ReportTemplate,
     Patient, Case, CaseItem, CaseOtherCharge, ClinicalReport, ReportVersion, ReportAttachment,
     Invoice, Payment, FinancialRegister,
-    ChatMessage, Notification, EmailLog
+    ChatMessage, Notification, EmailLog,
+    BackupRecord
 )
 
 DEFAULT_PASSWORD = "Admin@123"
@@ -1124,6 +1125,22 @@ def _seed_master_data(db: Session, org: Organization, branches: dict):
                 body="Dear Dr. Vikram Sharma,\n\nHere is the diagnostic study summary for patient Ananya Deshmukh referred to Apex Central Diagnostic Hospital.",
                 case_id=first_case.id if first_case else None,
                 status="sent",
+            ))
+
+        # Sample Initial Backup Snapshot (Phase 7)
+        backup_count = db.query(BackupRecord).filter(BackupRecord.organization_id == org.id).count()
+        if backup_count == 0:
+            db.add(BackupRecord(
+                organization_id=org.id,
+                filename="apex_db_baseline_snapshot.db",
+                file_path="storage/backups/apex_db_baseline_snapshot.db",
+                file_size_bytes=1048576,
+                file_size_human="1.05 MB",
+                backup_type="database_dump",
+                status="completed",
+                checksum_sha256="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                created_by_id=admin_u.id,
+                notes="Initial system deployment baseline snapshot",
             ))
 
     db.commit()

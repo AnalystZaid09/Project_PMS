@@ -407,4 +407,25 @@ class EmailLog(Base, TimestampMixin):
     error_message = Column(Text, nullable=True)
 
 
+# ==============================================================================
+# Phase 7: Backup, Hardening & Recovery Models
+# ==============================================================================
+
+class BackupRecord(Base, TimestampMixin):
+    __tablename__ = "backup_records"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    filename = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    file_size_bytes = Column(Integer, default=0, nullable=False)
+    file_size_human = Column(String(50), default="0 KB", nullable=False)
+    backup_type = Column(String(50), default="database_dump", nullable=False)  # database_dump, full_system_archive
+    status = Column(String(50), default="completed", nullable=False)  # completed, in_progress, failed
+    checksum_sha256 = Column(String(64), nullable=True)
+    created_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    notes = Column(Text, nullable=True)
+
+
+
 

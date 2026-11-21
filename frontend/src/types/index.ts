@@ -855,3 +855,21 @@ export interface AuditLogStats {
   master_events: number;
 }
 
+// ------------------------------------------------------------------------------
+// Phase 7: Backup, Disaster Recovery & Security Types
+// ------------------------------------------------------------------------------
+
+export interface BackupItem {
+  id: string;
+  filename: string;
+  file_size_bytes: number;
+  file_size_human: string;
+  backup_type: "database_dump" | "full_system_archive";
+  status: string;
+  checksum_sha256?: string;
+  created_by_name?: string;
+  notes?: string;
+  created_at: string;
+}
+
+

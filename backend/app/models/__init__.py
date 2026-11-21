@@ -12,7 +12,8 @@ from app.models.schema_all import (
     Patient, Case, CaseItem, CaseOtherCharge, ReportTemplate, ClinicalReport, ReportVersion,
     ReportAttachment,
     Invoice, Payment, FinancialRegister,
-    ChatMessage, Notification, EmailLog
+    ChatMessage, Notification, EmailLog,
+    BackupRecord
 )
 
 __all__ = [
@@ -53,5 +54,6 @@ __all__ = [
     "ChatMessage",
     "Notification",
     "EmailLog",
+    "BackupRecord",
 ]
 

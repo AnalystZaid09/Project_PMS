@@ -141,6 +141,7 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
         { title: "Roles & Permissions", href: "/admin/permissions", permission: "user_right:view" },
         { title: "General Settings", href: "/admin/settings", permission: "general_settings:view" },
         { title: "User Activity Logs", href: "/admin/audit-logs", permission: "audit_logs:view" },
+        { title: "System Backups & Recovery", href: "/admin/backups", permission: "general_settings:view" },
       ],
     },
   ];

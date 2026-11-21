@@ -300,3 +300,37 @@
   - 8 automated backend tests in `backend/tests/test_analytics_communication_audit.py` verifying dashboard analytics calculations, channel/DM messaging, notification lifecycles, email validation and logging, and audit stats.
   - Total test suite: **62 passed** (100% pass rate in 14.51s).
   - TypeScript & Vite build: **0 errors** cleanly bundled in production mode (`dist/assets/index-*.js`).
+
+---
+
+### Phase 7: Backup, Hardening & Deployment
+- [x] Reference Screenshot Mappings & Requirements:
+  - `PMS/eight_tab_create_backups.png` -> Automated and manual database snapshots and full system archives console (`BackupsPage.tsx`), retention policy banner (daily midnight snapshots, 10 copies retention), snapshot listing table (Filename, Type badge, Size, SHA-256 Checksum, Created At, Operator, Status badge), action triggers for immediate snapshot generation, safe direct download, disaster recovery restore confirmation dialog with alert warnings, and snapshot deletion.
+  - Blueprint Acceptance Scenario 17 -> Non-production dataset backup and restore tested and proven, including integrity validation prior to restore and safety rollback protection.
+- [x] Relational Database Modelling & Alembic Migrations:
+  - Authored `007_backups_and_hardening.py` Alembic migration.
+  - Created `BackupRecord` model (`id`, `organization_id`, `filename`, `file_path`, `file_size_bytes`, `file_size_human`, `backup_type`, `status`, `checksum_sha256`, `created_by_id`, `notes`, `created_at`).
+  - Exported `BackupRecord` in `backend/app/models/__init__.py`.
+- [x] Core Backup & Security Engines:
+  - `backend/app/core/backup.py`: Atomic zero-lock SQLite online backup API (`conn.backup()`) and PostgreSQL `pg_dump` execution; ZIP system archive creation (database + uploaded scans + generated reports); SHA-256 checksum calculation; disaster recovery restoration with checksum pre-validation and safety pre-restore rollback copies.
+  - `backend/app/core/security_headers.py`: `SecurityHeadersMiddleware` enforcing OWASP headers (Strict-Transport-Security, X-Content-Type-Options nosniff, X-Frame-Options DENY, X-XSS-Protection, Referrer-Policy); `sanitize_filename` protecting against path traversal (`../`) and illegal characters; `validate_file_upload` restricting MIME extensions to clinical types (`.pdf`, `.png`, `.jpg`, `.jpeg`, `.dcm`, `.dicom`, `.zip`, `.csv`) and enforcing 10MB ceiling.
+  - `scripts/backup_restore.py`: Standalone CLI utility for cron automation (`--backup`, `--backup --full`, `--list`, `--restore <filename>`).
+- [x] Backend API Endpoints (`backend/app/api/v1/backups.py`):
+  - `GET /backups`: List organization backup snapshots with size, checksum, and status.
+  - `POST /backups`: Trigger on-demand database or full system archive snapshot.
+  - `GET /backups/{id}/download`: Authenticated safe streaming download of backup files.
+  - `POST /backups/{id}/restore`: Disaster recovery restoration with integrity verification and safety rollback.
+  - `DELETE /backups/{id}`: Remove backup record and safely unlink disk file.
+- [x] Synthetic Development Data Seeding:
+  - Updated `backend/app/db/seed.py` with baseline system snapshot.
+- [x] Production Frontend SaaS Screens:
+  - `BackupsPage.tsx` (`/admin/backups`): Matching `eight_tab_create_backups.png` with "Create Snapshot Now" modal, retention banner, snapshots table, download action, restore dialog with safety safeguards, and deletion.
+- [x] Routing & Navigation:
+  - Mounted `/admin/backups` in `frontend/src/routes/AppRoutes.tsx`.
+  - Added "System Backups & Recovery" under Administration in `frontend/src/layouts/Sidebar.tsx`.
+- [x] Production Operations Documentation:
+  - Authored `docs/deployment-and-operations.md` covering architecture topology, Docker Compose production deployment (`docker-compose.prod.yml`), NGINX SSL reverse proxy with rate limiting, automated cron backup configuration, disaster recovery runbook, and health monitoring endpoints.
+- [x] Automated Acceptance & Unit Testing:
+  - 9 automated backend tests in `backend/tests/test_backup_restore_and_security.py` verifying database snapshot creation, full system archive generation, restore with integrity verification, corrupt file restore rejection, file download, backup deletion, security headers injection, and safe vs dangerous upload validation.
+  - Total test suite: **71 passed** (100% pass rate in 14.46s).
+  - TypeScript & Vite build: **0 errors** cleanly bundled in production mode (`dist/assets/index-*.js`).

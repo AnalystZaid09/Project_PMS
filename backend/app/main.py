@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.security_headers import SecurityHeadersMiddleware
 from app.db.seed import seed_database
 from app.db.session import Base, SessionLocal, engine
 # Import all models to ensure Base.metadata is completely populated
@@ -48,6 +49,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Security Headers Middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Root endpoint
 @app.get("/", tags=["System"])

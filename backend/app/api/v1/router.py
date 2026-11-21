@@ -19,6 +19,7 @@ from app.api.v1 import (
     chat,
     notifications,
     emails,
+    backups,
 )
 
 api_router = APIRouter()
@@ -42,6 +43,7 @@ api_router.include_router(analytics.router)
 api_router.include_router(chat.router)
 api_router.include_router(notifications.router)
 api_router.include_router(emails.router)
+api_router.include_router(backups.router)
 
 
 
