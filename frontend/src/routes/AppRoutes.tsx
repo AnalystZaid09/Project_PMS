@@ -32,6 +32,10 @@ import { PettyCashPage } from "@/features/registers/PettyCashPage";
 import { DateWiseRegisterPage } from "@/features/registers/DateWiseRegisterPage";
 import { ChargesReportPage } from "@/features/reports/ChargesReportPage";
 import { OtherChargesReportPage } from "@/features/reports/OtherChargesReportPage";
+import { ClinicalReportsListPage } from "@/features/reports/ClinicalReportsListPage";
+import { PatientReportEditorPage } from "@/features/reports/PatientReportEditorPage";
+import { ReferringDoctorReportPage } from "@/features/reports/ReferringDoctorReportPage";
+import { ReportingDoctorReportPage } from "@/features/reports/ReportingDoctorReportPage";
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -73,13 +77,21 @@ export const AppRoutes: React.FC = () => {
             <Route path="/registers/date-wise" element={<DateWiseRegisterPage />} />
           </Route>
 
-          {/* Phase 4: Financial & Charges Reports */}
+          {/* Phase 4 & Phase 5: Financial, Charges & Doctor Reports */}
           <Route element={<ProtectedRoute requiredPermission="charges_report:view" />}>
             <Route path="/reports/charges" element={<ChargesReportPage />} />
+            <Route path="/reports/referring-doctor" element={<ReferringDoctorReportPage />} />
+            <Route path="/reports/reporting-doctor" element={<ReportingDoctorReportPage />} />
           </Route>
 
           <Route element={<ProtectedRoute requiredPermission="other_charges_report:view" />}>
             <Route path="/reports/other-charges" element={<OtherChargesReportPage />} />
+          </Route>
+
+          {/* Phase 5: Clinical Reports & Diagnostic Verification Workflow */}
+          <Route element={<ProtectedRoute requiredPermission="patient_report:view" />}>
+            <Route path="/reports/clinical" element={<ClinicalReportsListPage />} />
+            <Route path="/reports/editor/:id" element={<PatientReportEditorPage />} />
           </Route>
 
           {/* Admin Routes with Permission Checks */}

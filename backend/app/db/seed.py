@@ -11,7 +11,7 @@ from app.models.schema_all import (
     Department, City, PatientCategory, DoctorCategory, Doctor, DoctorInvestigationRate,
     InvestigationCategory, Investigation, InvestigationBranchPrice,
     OtherChargeType, EmailTemplate, ReportTemplate,
-    Patient, Case, CaseItem, CaseOtherCharge, ClinicalReport,
+    Patient, Case, CaseItem, CaseOtherCharge, ClinicalReport, ReportVersion, ReportAttachment,
     Invoice, Payment, FinancialRegister
 )
 
@@ -726,7 +726,7 @@ def _seed_master_data(db: Session, org: Organization, branches: dict):
                     cat_disc_pct = Decimal(str(p_cat.discount_percentage))
 
             valid_invs = [i for i in inv_list if i is not None]
-            for inv in valid_invs:
+            for inv_idx, inv in enumerate(valid_invs, start=1):
                 price = inv.emergency_price if c_cat == "emergency" and inv.emergency_price > 0 else inv.default_price
                 gross += price
                 if cat_disc_pct > 0:
@@ -756,7 +756,7 @@ def _seed_master_data(db: Session, org: Organization, branches: dict):
             db.add(case_obj)
             db.flush()
 
-            for inv in valid_invs:
+            for inv_idx, inv in enumerate(valid_invs, start=1):
                 price = inv.emergency_price if c_cat == "emergency" and inv.emergency_price > 0 else inv.default_price
                 item_disc = round(price * (cat_disc_pct / Decimal("100.00")), 2) if cat_disc_pct > 0 else Decimal("0.00")
                 ci = CaseItem(
@@ -772,13 +772,72 @@ def _seed_master_data(db: Session, org: Organization, branches: dict):
                 db.add(ci)
                 db.flush()
 
-                # Draft report
-                db.add(ClinicalReport(
+                # Clinical report container with rich findings
+                rep_status = "finalized" if c_status == "completed" else ("submitted" if c_status == "report_pending" else "draft")
+                findings_sample = (
+                    "CLINICAL FINDINGS:\n"
+                    "Lumbosacral spine demonstrates preserved vertebral body heights.\n"
+                    "Mild degenerative osteophytic spurring noted at L3-L5 anterior margins.\n"
+                    "Intervertebral disc space narrowing visualized at L4-L5 level.\n"
+                    "No acute fracture, subluxation, or destructive bony lesion identified."
+                    if "X-Ray" in inv.name or "Lumbosacral" in inv.name or "Chest" in inv.name
+                    else (
+                        "HEMATOLOGY PARAMETERS:\n"
+                        "Hemoglobin: 13.8 g/dL (Reference: 12.0 - 16.0)\n"
+                        "Total Leucocyte Count (WBC): 7,400 /mcL (Reference: 4,000 - 11,000)\n"
+                        "Platelet Count: 245,000 /mcL (Reference: 150,000 - 450,000)\n"
+                        "RBC Indices: Normocytic normochromic red cell morphology."
+                    )
+                )
+                impression_sample = (
+                    "Degenerative disc disease with mild spondylosis at L3-L5. Correlate clinically with nerve root radiculopathy."
+                    if "X-Ray" in inv.name or "Lumbosacral" in inv.name or "Chest" in inv.name
+                    else "Normal complete blood count profile within adult physiological limits."
+                )
+                recommendation_sample = "Clinical correlation recommended. Lumbar spine MRI advised if radicular neurological deficits persist."
+
+                cr_obj = ClinicalReport(
+                    case_id=case_obj.id,
                     case_item_id=ci.id,
-                    status="completed" if c_status == "completed" else "draft",
+                    report_number=f"APX-REP-{today_str}-{(c_idx - 1) * 10 + inv_idx:04d}",
+                    report_name=f"{inv.name} - Diagnostic Study",
+                    report_heading=f"{inv.name.upper()} EXAMINATION",
+                    status=rep_status,
                     current_version=1,
+                    findings_text=findings_sample,
+                    impression=impression_sample,
+                    recommendation=recommendation_sample,
                     reporting_doctor_id=rep_id,
+                    digital_signature=True if rep_status == "finalized" else False,
+                    patient_email=pat.email or "patient@example.com",
+                    created_at=case_obj.visit_datetime,
+                )
+                db.add(cr_obj)
+                db.flush()
+
+                # Version 1
+                db.add(ReportVersion(
+                    report_id=cr_obj.id,
+                    version_number=1,
+                    report_name=cr_obj.report_name,
+                    report_heading=cr_obj.report_heading,
+                    findings_text=cr_obj.findings_text,
+                    impression=cr_obj.impression,
+                    recommendation=cr_obj.recommendation,
+                    created_at=case_obj.visit_datetime,
                 ))
+
+                # Add sample attachment for radiology studies
+                if "X-Ray" in inv.name or "Chest" in inv.name or "Lumbosacral" in inv.name:
+                    db.add(ReportAttachment(
+                        report_id=cr_obj.id,
+                        file_name=f"{pat.first_name.upper()}_{pat.last_name.upper()}_SCAN_01.png",
+                        file_type="image/png",
+                        file_size=122880,
+                        file_data="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+                        caption="Lumbosacral Digital Radiograph (AP & Lateral View)",
+                        created_at=case_obj.visit_datetime,
+                    ))
 
             # Automatically create Invoice for the case
             inv_no = f"APX-INV-{today_str}-{c_idx-1:04d}"

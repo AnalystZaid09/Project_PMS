@@ -87,8 +87,11 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggle: () => void }> =
       icon: FileBarChart,
       permission: "charges_report:view",
       children: [
+        { title: "Clinical Reports Worklist", href: "/reports/clinical", permission: "patient_report:view" },
         { title: "Charges Report", href: "/reports/charges", permission: "charges_report:view" },
         { title: "Other Charges Report", href: "/reports/other-charges", permission: "other_charges_report:view" },
+        { title: "Referring Doctor Report", href: "/reports/referring-doctor", permission: "charges_report:view" },
+        { title: "Reporting Doctor Report", href: "/reports/reporting-doctor", permission: "charges_report:view" },
       ],
     },
     {

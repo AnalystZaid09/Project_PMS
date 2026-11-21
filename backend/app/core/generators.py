@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models.schema_all import Patient, Case, Invoice, Payment
+from app.models.schema_all import Patient, Case, Invoice, Payment, ClinicalReport
 
 
 def generate_uhid(db: Session, organization_id: str) -> str:
@@ -77,3 +77,20 @@ def generate_receipt_number(db: Session, organization_id: str) -> str:
         candidate_num += 1
 
 
+
+
+def generate_report_number(db: Session) -> str:
+    today_str = datetime.now(timezone.utc).strftime("%Y%m%d")
+    prefix = f"APX-REP-{today_str}-"
+
+    count = db.query(func.count(ClinicalReport.id)).filter(
+        ClinicalReport.report_number.like(f"{prefix}%")
+    ).scalar() or 0
+
+    candidate_num = count + 1
+    while True:
+        candidate = f"{prefix}{candidate_num:04d}"
+        exists = db.query(ClinicalReport.id).filter(ClinicalReport.report_number == candidate).first()
+        if not exists:
+            return candidate
+        candidate_num += 1

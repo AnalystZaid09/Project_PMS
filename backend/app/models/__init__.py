@@ -10,6 +10,7 @@ from app.models.schema_all import (
     InvestigationCategory, Investigation, InvestigationBranchPrice,
     OtherChargeType, EmailTemplate,
     Patient, Case, CaseItem, CaseOtherCharge, ReportTemplate, ClinicalReport, ReportVersion,
+    ReportAttachment,
     Invoice, Payment, FinancialRegister
 )
 
@@ -44,6 +45,7 @@ __all__ = [
     "ReportTemplate",
     "ClinicalReport",
     "ReportVersion",
+    "ReportAttachment",
     "Invoice",
     "Payment",
     "FinancialRegister",

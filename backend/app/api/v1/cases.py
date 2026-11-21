@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, desc, func
 
 from app.core.audit import log_audit_action
-from app.core.generators import generate_uhid, generate_case_number, generate_invoice_number
+from app.core.generators import generate_uhid, generate_case_number, generate_invoice_number, generate_report_number
 from app.core.rbac import AuthenticatedUserContext, get_current_user, require_permission
 from app.db.session import get_db
 from app.models.schema_all import (
@@ -380,6 +380,7 @@ def register_case_wizard(
 
         calculated_items.append({
             "investigation_id": inv.id,
+            "inv_name": inv.name,
             "quantity": qty,
             "price": unit_price,
             "discount_amount": line_discount,
@@ -450,7 +451,11 @@ def register_case_wizard(
 
         # Create draft ClinicalReport container for reporting doctor
         draft_report = ClinicalReport(
+            case_id=new_case.id,
             case_item_id=case_item.id,
+            report_number=generate_report_number(db),
+            report_name=c_item.get("inv_name", "Diagnostic Investigation"),
+            report_heading=f"{c_item.get('inv_name', 'INVESTIGATION').upper()} REPORT",
             status="draft",
             current_version=1,
             reporting_doctor_id=payload.reporting_doctor_id or payload.radiologist_id or payload.pathologist_id,

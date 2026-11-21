@@ -116,7 +116,7 @@ Run the backend Pytest test suite:
 python -m pytest backend/tests -v
 ```
 
-All **35 automated tests** pass with 100% success rate:
+All **54 automated tests** pass with 100% success rate:
 - Health checks and DB connection
 - JWT Bearer authentication and token claim validation
 - Password hashing security (Bcrypt)
@@ -141,6 +141,24 @@ All **35 automated tests** pass with 100% success rate:
 - Ancillary and procedural charges integration
 - Clinical case register with date range filters, search, and status tracking
 - Case cancellation safety guards preventing deletion if reports are finalized or paid
+- Invoices listing, multi-field search, status filtering, and financial KPI summary
+- Server-side split payment collection and receipt generation (`APX-REC-YYYYMMDD-XXXX`)
+- Patient refund calculation safeguards and balance reconciliation
+- Chronological Case Register with aggregated charge totals (`case_register.png`)
+- Bank Register with debit/credit flow and transaction particulars (`bank_register.png`)
+- Operational Expense Register with due/paid status tracking (`expense_register.png`)
+- Petty Cash Register with credit float and debit outflows (`petty_cash.png`)
+- Date Wise Register with daily total reconciliation and sequential receipts (`date_wise_register.png`)
+- Investigation Charges Report and Ancillary Other Charges Report (`Charges_Report.png`, `Other_Charges_Report.png`)
+- Clinical Report Editor (`Patient_Report.png` and variants) with hierarchical structured template library
+- Multi-status clinical report lifecycle (`draft` -> `submitted` -> `verified` -> `finalized` -> `amended`)
+- Digital signature verification stamp and immutable locked report guards
+- Report version snapshots (`ReportVersion`) and diagnostic scan attachments (`ReportAttachment`)
+- Addendum creation with explicit medical reasoning for amended reports
+- Branded printable diagnostic report letterhead (`ReportPrintPreviewModal.tsx`)
+- Referring Doctor commission audit report (`refering_doctor_report.png`)
+- Reporting Doctor tariff and consultation fee report (`report_doctor_report.png`)
+- Clinical reports worklist with KPI counters and email dispatch trigger
 
 Build the frontend bundle:
 ```powershell

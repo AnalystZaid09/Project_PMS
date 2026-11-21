@@ -5,6 +5,7 @@ from app.api.v1 import (
     billing,
     branches,
     cases,
+    clinical_reports,
     health,
     masters,
     patients,
@@ -28,6 +29,7 @@ api_router.include_router(masters.router)
 api_router.include_router(patients.router)
 api_router.include_router(cases.router)
 api_router.include_router(billing.router)
+api_router.include_router(clinical_reports.router)
 api_router.include_router(registers.router)
 api_router.include_router(reports.router)
 api_router.include_router(settings.router)

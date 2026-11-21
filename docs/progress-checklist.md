@@ -7,7 +7,7 @@
 | **Phase 2** | Master Data Management | ✅ **Completed** | Departments, Cities, Categories, Doctors, Tariffs, Investigations, Charges, Templates (27/27 tests passed) |
 | **Phase 3** | Patient & Case Workflow | ✅ **Completed** | Duplicate check, Patient Profile & Timeline, 5-Step Case Wizard, Tariffs, Ancillary Charges, Case Register (35/35 tests passed) |
 | **Phase 4** | Billing & Financial Registers | ✅ **Completed** | Server-side invoice calc, receipts, split payments, refunds, cash/bank ledgers, charges reports (45/45 tests passed) |
-| **Phase 5** | Reports & Verification Workflow | 📋 Planned | Template editor, review/finalize lifecycle, versioning, branded PDF |
+| **Phase 5** | Reports & Verification Workflow | ✅ **Completed** | Clinical editor, hierarchical template tree, multi-status lifecycle, versioning, branded report print, referring & reporting doctor reports (54/54 tests passed) |
 | **Phase 6** | Analytics, Communication & Audit | 📋 Planned | Dashboard KPIs, internal chat, email templates, audit trail |
 | **Phase 7** | Backup, Hardening & Deployment | 📋 Planned | Backup/restore script, security audit, E2E tests, production containerization |
 
@@ -203,3 +203,53 @@
   - 10 automated backend tests in `backend/tests/test_billing_registers.py` verifying invoice auto-creation, payment collection, receipts, refund guards, register aggregation math, date-wise receipt ranges, and charges reports.
   - Total test suite: **45 passed** (100% pass rate in 30.73s).
   - TypeScript & Vite build: **0 errors** cleanly bundled in production mode.
+
+---
+
+### Phase 5: Reports & Verification Workflow
+- [x] Reference Screenshot Mappings & Requirements:
+  - `PMS/New_Patentient/Patient_Report.png`, `Patient_Report_Main.png`, `Pateint_Report_Main2.png`, `Pateint_Report_Main3.png` -> Clinical Report Editor with hierarchical template tree library (Radiology, Sonogram, CT, MRI, Pathology), patient demographics banner, email dispatch, scan attachments with thumbnail preview cards, case investigations table, formatting toolbar, findings textarea, impression, recommendations, and status workflow transitions.
+  - `PMS/Fifth_Tab/refering_doctor_report.png` -> Referring Doctor Report with sub-tabs ("Referring Doctor" / "All Doctor's"), Category, Doctor, Department, date filters, Commission calculated toggle, Print, Export to Excel, and summary footer (`TOTAL CASES`, `TOTAL BILLED`, `TOTAL COMMISSION`).
+  - `PMS/Fifth_Tab/report_doctor_report.png` -> Reporting Doctor Report with sub-tabs ("Reporting Doctor" / "All Doctor's"), Category, Doctor, Department, date filters, Print, Export to Excel, and summary footer (`TOTAL CASES`, `TOTAL BILLED`, `TOTAL REPORTING FEES`).
+  - Branded Diagnostic Report (`ReportPrintPreviewModal.tsx`) -> Clinic letterhead ("Apex Health Diagnostics"), patient demographics, findings, impression, recommendations, attachment thumbnails, doctor digital signature verification block, safety disclaimers, and print action.
+  - Clinical Reports Directory & Worklist (`ClinicalReportsListPage.tsx`) -> KPI counters (Total, Draft, Submitted, Verified, Finalized, Amended), department and date filters, data table with direct editor and print preview actions.
+- [x] Relational Database Modelling & Alembic Migrations:
+  - Authored `005_clinical_reports_workflow.py` Alembic migration.
+  - Extended `ClinicalReport` model with `case_id`, `report_number`, `report_name`, `report_heading`, `findings_text`, `impression`, `recommendation`, `verification_remarks`, `digital_signature`, `patient_email`.
+  - Extended `ReportVersion` with complete snapshot fields (`report_name`, `report_heading`, `findings_text`, `impression`, `recommendation`).
+  - Created `ReportAttachment` model for scan/image uploads.
+  - Sequential unique generator: `generate_report_number` (`APX-REP-YYYYMMDD-XXXX`).
+- [x] Multi-Status Clinical Governance Lifecycle:
+  - Enforced transitions: `draft` -> `submitted` -> `verified` (doctor) -> `finalized` (doctor lock + digital sign-off) -> `amended` (addendum version with explicit medical change reason).
+  - Prohibited automated AI diagnostic finalization: reports require mandatory human specialist review.
+  - Finalized lock guard: reports marked finalized cannot be directly edited; subsequent edits require creating a versioned amendment with clinical reasoning.
+  - Auto-case completion: when all clinical reports for a case are finalized, the case status is automatically advanced to `completed`.
+- [x] Backend API Endpoints (`backend/app/api/v1/clinical_reports.py` & `reports.py`):
+  - `GET /clinical-reports/summary/stats`: Executive counters for draft, submitted, verified, finalized, and amended reports.
+  - `GET /clinical-reports`: Clinical reports worklist with filters by department, status, date range, and search.
+  - `GET /clinical-reports/{id}` & `GET /clinical-reports/by-case/{case_id}`: Comprehensive report details including version history snapshots and scan attachments.
+  - `POST /clinical-reports` & `PUT /clinical-reports/{id}`: Create and edit draft reports.
+  - `POST /clinical-reports/{id}/submit`: Advance report to submitted review status.
+  - `POST /clinical-reports/{id}/verify`: Doctor verification with clinical remarks.
+  - `POST /clinical-reports/{id}/finalize`: Doctor finalization and digital lock with cryptographic sign-off flag.
+  - `POST /clinical-reports/{id}/amend`: Create amendment addendum with version increment and audit logging.
+  - `POST /clinical-reports/{id}/attachments` & `DELETE /clinical-reports/{id}/attachments/{att_id}`: Manage diagnostic scan attachments.
+  - `POST /clinical-reports/{id}/send-email`: Dispatch verified/finalized diagnostic report notification to patient/doctor email.
+  - `GET /reports/referring-doctor`: Referring doctor commission report.
+  - `GET /reports/reporting-doctor`: Reporting doctor tariff and fee audit report.
+- [x] Synthetic Clinical Seed Data:
+  - Seeded clinical reports across diverse modalities (Ultrasound Abdomen & Pelvis, Digital Chest X-Ray PA View, Complete Blood Count with ESR, Liver Function Test, CT Brain Non-Contrast).
+  - Seeded version history snapshots and sample diagnostic scan attachments.
+- [x] Production Frontend Clinical SaaS Screens:
+  - `PatientReportEditorPage.tsx` (`/reports/editor/:id`): Clinical report workstation matching `Patient_Report.png` and variants.
+  - `ClinicalReportsListPage.tsx` (`/reports/clinical`): Worklist directory with KPI status cards and quick navigation.
+  - `ReferringDoctorReportPage.tsx` (`/reports/referring-doctor`): Matching `refering_doctor_report.png`.
+  - `ReportingDoctorReportPage.tsx` (`/reports/reporting-doctor`): Matching `report_doctor_report.png`.
+  - `ReportPrintPreviewModal.tsx`: Branded printable letterhead with digital doctor signature stamp and safety notices.
+- [x] Routing & Navigation:
+  - Mounted `/reports/clinical`, `/reports/editor/:id`, `/reports/referring-doctor`, and `/reports/reporting-doctor` in `frontend/src/routes/AppRoutes.tsx`.
+  - Updated `Sidebar.tsx` navigation under "Reports & Analytics".
+- [x] Automated Acceptance & Unit Testing:
+  - 9 automated backend tests in `backend/tests/test_clinical_reports.py` verifying draft updates, submit/verify/finalize transitions, finalized lock rejection, amendment versioning, and email dispatch.
+  - Total test suite: **54 passed** (100% pass rate in 12.50s).
+  - TypeScript & Vite build: **0 errors** cleanly bundled in production mode (`dist/assets/index-*.js`).

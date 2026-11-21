@@ -239,15 +239,25 @@ class ClinicalReport(Base, TimestampMixin):
     __tablename__ = "clinical_reports"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
+    case_id = Column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=True, index=True)
     case_item_id = Column(String(36), ForeignKey("case_items.id", ondelete="CASCADE"), nullable=False, index=True)
     template_id = Column(String(36), ForeignKey("report_templates.id", ondelete="SET NULL"), nullable=True)
-    status = Column(String(50), default="draft", nullable=False)
+    report_number = Column(String(50), unique=True, nullable=True, index=True)
+    report_name = Column(String(255), nullable=True)
+    report_heading = Column(String(255), nullable=True)
+    status = Column(String(50), default="draft", nullable=False)  # draft, submitted, verified, finalized, amended
     current_version = Column(Integer, default=1, nullable=False)
+    findings_text = Column(Text, nullable=True)
+    impression = Column(Text, nullable=True)
+    recommendation = Column(Text, nullable=True)
     reporting_doctor_id = Column(String(36), ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
     verified_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     verified_at = Column(DateTime(timezone=True), nullable=True)
+    verification_remarks = Column(Text, nullable=True)
     finalized_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     finalized_at = Column(DateTime(timezone=True), nullable=True)
+    digital_signature = Column(Boolean, default=False, nullable=False)
+    patient_email = Column(String(255), nullable=True)
 
 
 class ReportVersion(Base):
@@ -256,10 +266,29 @@ class ReportVersion(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     report_id = Column(String(36), ForeignKey("clinical_reports.id", ondelete="CASCADE"), nullable=False, index=True)
     version_number = Column(Integer, nullable=False)
+    report_name = Column(String(255), nullable=True)
+    report_heading = Column(String(255), nullable=True)
+    findings_text = Column(Text, nullable=True)
+    impression = Column(Text, nullable=True)
+    recommendation = Column(Text, nullable=True)
     content_json = Column(Text, nullable=True)
     rendered_html = Column(Text, nullable=True)
     amendment_reason = Column(Text, nullable=True)
     created_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+
+class ReportAttachment(Base):
+    __tablename__ = "report_attachments"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    report_id = Column(String(36), ForeignKey("clinical_reports.id", ondelete="CASCADE"), nullable=False, index=True)
+    file_name = Column(String(255), nullable=False)
+    file_type = Column(String(100), nullable=False)
+    file_size = Column(Integer, nullable=True)
+    file_data = Column(Text, nullable=True)  # Base64 or local storage path
+    caption = Column(String(255), nullable=True)
+    uploaded_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
 

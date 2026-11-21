@@ -541,3 +541,164 @@ export interface OtherChargesReportRow {
 
 
 
+
+// ------------------------------------------------------------------------------
+// Phase 5: Clinical Reports & Verification Types
+// ------------------------------------------------------------------------------
+
+export interface ReportAttachmentItem {
+  id: string;
+  report_id: string;
+  file_name: string;
+  file_type: string;
+  file_size?: number;
+  file_data?: string;
+  caption?: string;
+  created_at: string;
+}
+
+export interface ReportVersionItem {
+  id: string;
+  report_id: string;
+  version_number: number;
+  report_name?: string;
+  report_heading?: string;
+  findings_text?: string;
+  impression?: string;
+  recommendation?: string;
+  rendered_html?: string;
+  amendment_reason?: string;
+  created_by_name?: string;
+  created_at: string;
+}
+
+export interface ClinicalReportListItem {
+  id: string;
+  report_number: string;
+  case_id: string;
+  case_number: string;
+  case_item_id: string;
+  patient_id: string;
+  patient_uhid: string;
+  patient_name: string;
+  patient_age?: number;
+  patient_gender: string;
+  patient_phone?: string;
+  investigation_id: string;
+  investigation_code: string;
+  investigation_name: string;
+  department_name?: string;
+  report_name?: string;
+  report_heading?: string;
+  status: "draft" | "submitted" | "verified" | "finalized" | "amended";
+  current_version: number;
+  reporting_doctor_name?: string;
+  verified_by_name?: string;
+  verified_at?: string;
+  finalized_by_name?: string;
+  finalized_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClinicalReportDetail {
+  id: string;
+  report_number: string;
+  case_id: string;
+  case_number: string;
+  case_item_id: string;
+  patient_id: string;
+  patient_uhid: string;
+  patient_name: string;
+  patient_age?: number;
+  patient_gender: string;
+  patient_phone?: string;
+  patient_city?: string;
+  patient_email?: string;
+  patient_symptoms?: string;
+  referring_doctor_name?: string;
+  reporting_doctor_name?: string;
+  branch_name?: string;
+  branch_address?: string;
+  investigation_id: string;
+  investigation_code: string;
+  investigation_name: string;
+  department_name?: string;
+  template_id?: string;
+  template_name?: string;
+  report_name?: string;
+  report_heading?: string;
+  status: "draft" | "submitted" | "verified" | "finalized" | "amended";
+  current_version: number;
+  findings_text?: string;
+  impression?: string;
+  recommendation?: string;
+  verification_remarks?: string;
+  digital_signature: boolean;
+  verified_by_name?: string;
+  verified_at?: string;
+  finalized_by_name?: string;
+  finalized_at?: string;
+  versions: ReportVersionItem[];
+  attachments: ReportAttachmentItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClinicalReportsStats {
+  total_reports: number;
+  draft_count: number;
+  submitted_count: number;
+  verified_count: number;
+  finalized_count: number;
+  amended_count: number;
+}
+
+export interface ReferringDoctorReportRow {
+  id: string;
+  date: string;
+  case_number: string;
+  patient_uhid: string;
+  patient_name: string;
+  doctor_id: string;
+  doctor_name: string;
+  doctor_category?: string;
+  department_name?: string;
+  investigation_code: string;
+  investigation_name: string;
+  charge_amount: number;
+  commission_rate: number;
+  commission_type: "percentage" | "fixed";
+  commission_amount: number;
+}
+
+export interface ReferringDoctorReportData {
+  items: ReferringDoctorReportRow[];
+  total_cases: number;
+  total_charges: number;
+  total_commission: number;
+}
+
+export interface ReportingDoctorReportRow {
+  id: string;
+  date: string;
+  case_number: string;
+  patient_uhid: string;
+  patient_name: string;
+  doctor_id: string;
+  doctor_name: string;
+  doctor_category?: string;
+  department_name?: string;
+  investigation_code: string;
+  investigation_name: string;
+  charge_amount: number;
+  rate_amount: number;
+  report_status: string;
+}
+
+export interface ReportingDoctorReportData {
+  items: ReportingDoctorReportRow[];
+  total_cases: number;
+  total_charges: number;
+  total_fees: number;
+}
