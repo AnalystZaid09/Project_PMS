@@ -5,8 +5,13 @@ import axios from "axios";
 // 2. Fallback to production Render backend if running on Vercel or any cloud domain
 // 3. Fallback to local /api/v1 proxy if running on localhost / 127.0.0.1
 const getBaseUrl = (): string => {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
+  let url = import.meta.env.VITE_API_BASE_URL;
+  if (url && typeof url === "string") {
+    // Automatically correct the non-existent apex-pms-backend URL to the real live backend URL
+    if (url.includes("apex-pms-backend.onrender.com")) {
+      url = url.replace("apex-pms-backend.onrender.com", "project-pms.onrender.com");
+    }
+    return url;
   }
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
@@ -26,9 +31,17 @@ export const apiClient = axios.create({
   },
 });
 
-// Request interceptor to attach JWT access token
+// Request interceptor to attach JWT access token and ensure correct backend endpoint
 apiClient.interceptors.request.use(
   (config) => {
+    // Automatic safety rewrite: ensure no request goes to the dead apex-pms-backend domain
+    if (config.baseURL && config.baseURL.includes("apex-pms-backend.onrender.com")) {
+      config.baseURL = config.baseURL.replace("apex-pms-backend.onrender.com", "project-pms.onrender.com");
+    }
+    if (config.url && config.url.includes("apex-pms-backend.onrender.com")) {
+      config.url = config.url.replace("apex-pms-backend.onrender.com", "project-pms.onrender.com");
+    }
+
     const token = localStorage.getItem("pms_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
