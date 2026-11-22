@@ -126,7 +126,7 @@ PERMISSIONS_DEFINITION = [
 ]
 
 
-def seed_database(db: Session):
+def seed_database(db: Session, include_demo_data: bool = True):
     # 1. Organization - Fresh company identity
     org = db.query(Organization).filter(Organization.code == "APEX").first()
     if not org:
@@ -158,11 +158,14 @@ def seed_database(db: Session):
     # 2. Branches - Completely new, modern facility names
     branches_data = [
         ("1", "1. Apex Central Diagnostic Hospital", "India", "Gujarat", "Vadodara", "+91 265 2500001", "central@apexhealth.org"),
-        ("2", "2. Apex Westside Imaging Centre", "India", "Gujarat", "Halol", "+91 267 2500002", "westside@apexhealth.org"),
-        ("8", "3. Apex Kampala Medical Centre", "Uganda", "Central", "Kampala", "+256 41 5500008", "kampala@apexhealth.org"),
-        ("10", "4. Apex Atlantic Diagnostic Centre", "Ghana", "Central", "Cape Coast", "+233 33 5500010", "atlantic@apexhealth.org"),
-        ("12", "5. Apex Coastal Health Facility", "Kenya", "Coast", "Mombasa", "+254 41 5500012", "coastal@apexhealth.org"),
     ]
+    if include_demo_data:
+        branches_data.extend([
+            ("2", "2. Apex Westside Imaging Centre", "India", "Gujarat", "Halol", "+91 267 2500002", "westside@apexhealth.org"),
+            ("8", "3. Apex Kampala Medical Centre", "Uganda", "Central", "Kampala", "+256 41 5500008", "kampala@apexhealth.org"),
+            ("10", "4. Apex Atlantic Diagnostic Centre", "Ghana", "Central", "Cape Coast", "+233 33 5500010", "atlantic@apexhealth.org"),
+            ("12", "5. Apex Coastal Health Facility", "Kenya", "Coast", "Mombasa", "+254 41 5500012", "coastal@apexhealth.org"),
+        ])
 
     branches = {}
     for code, name, country, state, city, phone, email in branches_data:
@@ -263,12 +266,15 @@ def seed_database(db: Session):
     # 5. Synthetic Users - Distinct, professional personas with zero legacy company references
     users_data = [
         ("superadmin", "superadmin@apexhealth.org", "Global System Admin", True, ["super-admin"], list(branches.values())),
-        ("admin", "sarah.jenkins@apexhealth.org", "Sarah Jenkins", False, ["admin"], list(branches.values())),
-        ("receptionist", "emily.watson@apexhealth.org", "Emily Watson", False, ["receptionist"], [branches["1"], branches["2"]]),
-        ("drmarcus", "dr.vance@apexhealth.org", "Dr. Marcus Vance, MD", False, ["reporting-doctor"], list(branches.values())),
-        ("accountant", "david.miller@apexhealth.org", "David Miller", False, ["accountant"], [branches["1"]]),
-        ("writer", "alex.rivera@apexhealth.org", "Alex Rivera", False, ["report-writer"], [branches["1"], branches["2"]]),
     ]
+    if include_demo_data:
+        users_data.extend([
+            ("admin", "sarah.jenkins@apexhealth.org", "Sarah Jenkins", False, ["admin"], list(branches.values())),
+            ("receptionist", "emily.watson@apexhealth.org", "Emily Watson", False, ["receptionist"], [branches["1"], branches["2"]] if "2" in branches else [branches["1"]]),
+            ("drmarcus", "dr.vance@apexhealth.org", "Dr. Marcus Vance, MD", False, ["reporting-doctor"], list(branches.values())),
+            ("accountant", "david.miller@apexhealth.org", "David Miller", False, ["accountant"], [branches["1"]]),
+            ("writer", "alex.rivera@apexhealth.org", "Alex Rivera", False, ["report-writer"], [branches["1"], branches["2"]] if "2" in branches else [branches["1"]]),
+        ])
 
     pw_hash = get_password_hash(DEFAULT_PASSWORD)
 
@@ -326,7 +332,11 @@ def seed_database(db: Session):
     db.commit()
 
     # 7. Master Data Seeding (Phase 2)
-    _seed_master_data(db, org, branches)
+    if include_demo_data:
+        _seed_master_data(db, org, branches)
+    else:
+        db.commit()
+        return
 
 
 def _seed_master_data(db: Session, org: Organization, branches: dict):

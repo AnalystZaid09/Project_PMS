@@ -17,11 +17,13 @@ logger = logging.getLogger("pms.backend")
 def init_db():
     logger.info("Initializing database schema...")
     Base.metadata.create_all(bind=engine)
-    logger.info("Checking database seed status...")
+    logger.info("Checking database bootstrap status...")
     db = SessionLocal()
     try:
-        seed_database(db)
-        logger.info("Database seed verified successfully.")
+        import os
+        seed_demo = os.getenv("SEED_DUMMY_DATA", "false").lower() in ("true", "1")
+        seed_database(db, include_demo_data=seed_demo)
+        logger.info("Database bootstrap verified successfully.")
     except Exception as e:
         logger.error(f"Error seeding database: {e}")
     finally:
