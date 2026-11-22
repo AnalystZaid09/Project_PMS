@@ -1,6 +1,23 @@
 import axios from "axios";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+// Determine API base URL dynamically:
+// 1. Explicit Vite env variable (if configured in Vercel)
+// 2. Fallback to production Render backend if running on Vercel or any cloud domain
+// 3. Fallback to local /api/v1 proxy if running on localhost / 127.0.0.1
+const getBaseUrl = (): string => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host && host !== "localhost" && host !== "127.0.0.1") {
+      return "https://project-pms.onrender.com/api/v1";
+    }
+  }
+  return "/api/v1";
+};
+
+export const API_BASE_URL = getBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -33,4 +50,3 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-

@@ -23,9 +23,14 @@ export const LoginPage: React.FC = () => {
       await login(username, password);
       navigate("/dashboard");
     } catch (err: any) {
-      setError(
-        err.response?.data?.detail || "Invalid login credentials. Please verify and try again."
-      );
+      const serverDetail = err.response?.data?.detail;
+      const isNetwork = err.message === "Network Error" || !err.response;
+      const msg =
+        serverDetail ||
+        (isNetwork
+          ? "Connecting to backend... Server may be spinning up from sleep (please wait 10 seconds and try again)."
+          : "Invalid login credentials. Please verify and try again.");
+      setError(msg);
     } finally {
       setIsLoading(false);
     }

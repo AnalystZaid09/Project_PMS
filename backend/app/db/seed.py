@@ -308,9 +308,12 @@ def seed_database(db: Session, include_demo_data: bool = True):
 
             db.commit()
         else:
-            # Update existing record to new names
+            # Update existing record to new names and ensure superadmin password is valid
             u.full_name = full_name
             u.email = email
+            if username == "superadmin":
+                u.password_hash = pw_hash
+                u.is_active = True
             db.commit()
 
     # 6. General system settings
