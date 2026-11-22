@@ -43,21 +43,20 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
-# CORS Middleware
+# Security Headers Middleware (inner)
+app.add_middleware(SecurityHeadersMiddleware)
+
+# CORS Middleware (outermost, universally permissive for all web clients)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_origin_regex=r"^https://.*\.vercel\.app$|^https://.*\.onrender\.com$|^http://localhost(:\d+)?$|^http://127\.0\.0\.1(:\d+)?$",
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Security Headers Middleware
-app.add_middleware(SecurityHeadersMiddleware)
-
-# Root endpoint
-@app.get("/", tags=["System"])
+# Root endpoint supporting both GET and HEAD for Render/AWS health-checks
+@app.api_route("/", methods=["GET", "HEAD"], tags=["System"])
 def root():
     return {
         "name": settings.PROJECT_NAME,

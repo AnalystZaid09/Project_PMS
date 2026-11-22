@@ -15,6 +15,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     Production security headers hardening middleware ensuring OWASP compliance.
     """
     async def dispatch(self, request: Request, call_next):
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         response: Response = await call_next(request)
 
         # Standard OWASP security headers
