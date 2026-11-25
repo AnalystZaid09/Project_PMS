@@ -158,22 +158,35 @@ export const ReportPrintPreviewModal: React.FC<ReportPrintPreviewModalProps> = (
 
         {/* Scans / Attached Images Thumbnail Grid */}
         {report.attachments && report.attachments.length > 0 && (
-          <div className="mb-8 border-t border-slate-200 pt-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">
-              Diagnostic Imaging Plates & Attachments ({report.attachments.length})
-            </h3>
+          <div className="mb-8 border-t border-slate-200 pt-4 print:break-inside-avoid">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                Radiological Plates & Diagnostic Scans ({report.attachments.length})
+              </h3>
+              <span className="text-[10px] text-slate-500 font-mono">Calibrated Clinical Scans</span>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {report.attachments.map((att) => (
-                <div key={att.id} className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50 p-2">
-                  <div className="h-36 bg-slate-900 rounded flex items-center justify-center overflow-hidden">
+                <div key={att.id} className="border-2 border-slate-800 rounded-lg overflow-hidden bg-black p-2 shadow-sm text-white print:border-slate-900">
+                  <div className="h-44 bg-black rounded flex items-center justify-center overflow-hidden">
                     {att.file_data?.startsWith("data:image") ? (
-                      <img src={att.file_data} alt={att.file_name} className="max-h-full object-contain" />
+                      <img src={att.file_data} alt={att.file_name} className="max-h-full max-w-full object-contain filter contrast-125" />
                     ) : (
                       <span className="text-slate-400 font-mono text-xs">Imaging Plate</span>
                     )}
                   </div>
-                  <p className="text-[11px] font-medium text-slate-800 mt-1 truncate">{att.file_name}</p>
-                  {att.caption && <p className="text-[10px] text-slate-500 truncate">{att.caption}</p>}
+                  <div className="mt-2 border-t border-slate-800 pt-1.5">
+                    <p className="text-[11px] font-bold text-cyan-400 truncate print:text-slate-900">{att.caption || att.file_name}</p>
+                    <div className="flex items-center justify-between text-[9px] text-slate-400 print:text-slate-600 mt-0.5">
+                      <span className="truncate max-w-[120px]">{att.file_name}</span>
+                      <span>
+                        {new Date(att.created_at).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                        })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

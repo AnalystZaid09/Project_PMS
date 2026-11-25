@@ -21,6 +21,14 @@ import {
   Lock,
   PlusCircle,
   Sparkles,
+  Film,
+  Eye,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  Contrast,
+  Maximize2,
+  UploadCloud,
 } from "lucide-react";
 import { apiClient } from "@/lib/api";
 import { ClinicalReportDetail, ClinicalReportListItem, ReportAttachmentItem } from "@/types";
@@ -131,6 +139,21 @@ const TEMPLATE_HIERARCHY: TemplateNode[] = [
   },
 ];
 
+const XRAY_PROJECTIONS = [
+  "Chest PA View",
+  "Chest AP Supine",
+  "Chest Lateral View",
+  "Lumbar Spine AP View",
+  "Lumbar Spine Lateral View",
+  "Cervical Spine AP/Lat",
+  "Knee Joint AP/Lat",
+  "Pelvis AP View",
+  "Shoulder / Extremity View",
+  "Abdomen Erect / Supine",
+  "Spot Film / Magnified",
+  "General Radiograph",
+];
+
 export const PatientReportEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -156,6 +179,15 @@ export const PatientReportEditorPage: React.FC = () => {
   const [isAmendModalOpen, setIsAmendModalOpen] = useState(false);
   const [amendmentReason, setAmendmentReason] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  // X-Ray Dedicated Imaging State
+  const [selectedProjection, setSelectedProjection] = useState<string>("Chest PA View");
+  const [isUploadingXray, setIsUploadingXray] = useState<boolean>(false);
+  const [selectedXrayForView, setSelectedXrayForView] = useState<ReportAttachmentItem | null>(null);
+  const [xrayZoom, setXrayZoom] = useState<number>(1);
+  const [xrayRotation, setXrayRotation] = useState<number>(0);
+  const [xrayInvert, setXrayInvert] = useState<boolean>(false);
+  const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
 
   // Tree expanded state
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({
@@ -333,6 +365,60 @@ export const PatientReportEditorPage: React.FC = () => {
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const uploadXrayFiles = async (files: FileList | File[], projection?: string) => {
+    if (!report || !files || files.length === 0) return;
+    const projTag = projection || selectedProjection;
+    setIsUploadingXray(true);
+    let successCount = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > 25 * 1024 * 1024) {
+        setErrorMessage(`File ${file.name} exceeds 25MB limit.`);
+        continue;
+      }
+
+      await new Promise<void>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+          const base64Data = evt.target?.result as string;
+          try {
+            const res = await apiClient.post<ReportAttachmentItem>(`/clinical-reports/${report.id}/attachments`, {
+              file_name: file.name,
+              file_type: file.type || "image/png",
+              file_size: file.size,
+              file_data: base64Data,
+              caption: `[${projTag}] ${file.name.replace(/\.[^/.]+$/, "")}`,
+            });
+            setReport((prev) =>
+              prev ? { ...prev, attachments: [...prev.attachments, res.data] } : prev
+            );
+            successCount++;
+          } catch (err: any) {
+            setErrorMessage(err.response?.data?.detail || `Failed to upload ${file.name}`);
+          } finally {
+            resolve();
+          }
+        };
+        reader.onerror = () => resolve();
+        reader.readAsDataURL(file);
+      });
+    }
+
+    setIsUploadingXray(false);
+    if (successCount > 0) {
+      setStatusMessage(`Successfully attached ${successCount} X-Ray plate${successCount > 1 ? "s" : ""} (${projTag}).`);
+      setTimeout(() => setStatusMessage(null), 4000);
+    }
+  };
+
+  const openXrayViewer = (att: ReportAttachmentItem) => {
+    setSelectedXrayForView(att);
+    setXrayZoom(1);
+    setXrayRotation(0);
+    setXrayInvert(false);
   };
 
   const handleDeleteAttachment = async (attId: string) => {
@@ -561,93 +647,206 @@ export const PatientReportEditorPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Email & Image Attachment Actions (Matching Patient_Report.png) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          {/* Email dispatch */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 block">Email Address:</label>
-            <div className="flex space-x-2">
-              <Input
-                type="email"
-                placeholder="Enter patient or referring doctor email..."
-                value={patientEmail}
-                onChange={(e) => setPatientEmail(e.target.value)}
-                className="h-9 text-xs"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleSendEmail}
-                disabled={isSendingEmail}
-                className="flex items-center gap-1.5 text-xs shrink-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
-              >
-                <Send className="w-3.5 h-3.5" />
-                {isSendingEmail ? "Sending..." : "Send Email"}
-              </Button>
-            </div>
-            <p className="text-[11px] text-slate-400">All reports saved and images uploaded will be sent.</p>
-          </div>
-
-          {/* Attachments upload */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 block">Diagnostic Image Attachments:</label>
-            <div className="flex items-center space-x-2">
-              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-sm">
-                <Upload className="w-3.5 h-3.5 text-slate-500" />
-                Choose Scan File
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  disabled={isFinalized}
+        {/* Email & Dispatch Bar */}
+        <div className="pt-2 border-t border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex-1 max-w-lg space-y-1">
+              <label className="text-xs font-semibold text-slate-700 block">Dispatch Report via Email:</label>
+              <div className="flex space-x-2">
+                <Input
+                  type="email"
+                  placeholder="Enter patient or referring doctor email..."
+                  value={patientEmail}
+                  onChange={(e) => setPatientEmail(e.target.value)}
+                  className="h-8 text-xs"
                 />
-              </label>
-              <span className="text-[11px] text-slate-400">Supported: PNG, JPEG, DICOM snapshot</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSendEmail}
+                  disabled={isSendingEmail}
+                  className="flex items-center gap-1.5 text-xs shrink-0 h-8 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {isSendingEmail ? "Sending..." : "Send Email"}
+                </Button>
+              </div>
             </div>
+            <p className="text-[11px] text-slate-400 self-end">All attached X-Ray films and finalized findings will be included in the dispatch.</p>
           </div>
         </div>
 
-        {/* Uploaded Scan Thumbnails (Matching Patient_Report.png) */}
-        {report.attachments && report.attachments.length > 0 && (
-          <div className="pt-2">
-            <span className="text-xs font-semibold text-slate-600 block mb-2">Attached Scans & Imaging Plates:</span>
-            <div className="flex flex-wrap gap-3">
-              {report.attachments.map((att) => (
-                <div
-                  key={att.id}
-                  className="relative group w-36 bg-slate-50 border border-slate-200 rounded-lg p-2 shadow-sm text-xs"
-                >
-                  {!isFinalized && (
-                    <button
-                      onClick={() => handleDeleteAttachment(att.id)}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow"
-                      title="Remove image"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                  <div className="h-20 bg-slate-900 rounded flex items-center justify-center overflow-hidden mb-1.5">
-                    {att.file_data?.startsWith("data:image") ? (
-                      <img src={att.file_data} alt={att.file_name} className="max-h-full object-contain" />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-slate-400" />
-                    )}
-                  </div>
-                  <p className="font-semibold text-slate-800 text-[11px] truncate">{att.file_name}</p>
-                  <p className="text-[10px] text-slate-400">
-                    {new Date(att.created_at).toLocaleDateString("en-IN", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-              ))}
+        {/* Dedicated Digital Radiography (X-Ray) Film & Plate Upload Center */}
+        <div className="pt-3 border-t border-slate-200 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-gradient-to-r from-slate-900 to-slate-800 text-white p-3 rounded-lg shadow-sm">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center border border-cyan-400/30">
+                <Film className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                  Digital Radiography (X-Ray) Film & Plate Upload Center
+                  <Badge variant="outline" className="text-[10px] bg-cyan-950/80 border-cyan-500/40 text-cyan-300">
+                    {report.attachments?.length || 0} Plates Attached
+                  </Badge>
+                </h3>
+                <p className="text-[11px] text-slate-300">
+                  Upload patient radiographic films, DICOM snapshots, and plate scans (Chest, Spine, Extremities)
+                </p>
+              </div>
             </div>
+
+            {/* Projection selector & upload button */}
+            {!isFinalized && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-[11px] text-slate-300 font-medium whitespace-nowrap">Projection:</span>
+                  <select
+                    value={selectedProjection}
+                    onChange={(e) => setSelectedProjection(e.target.value)}
+                    className="h-8 text-xs bg-slate-800 border border-slate-600 text-white rounded px-2 focus:ring-1 focus:ring-cyan-400 focus:outline-none"
+                  >
+                    {XRAY_PROJECTIONS.map((proj) => (
+                      <option key={proj} value={proj} className="bg-slate-900 text-white">
+                        {proj}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow transition-colors">
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Upload X-Ray</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files) uploadXrayFiles(e.target.files);
+                    }}
+                    className="hidden"
+                    disabled={isUploadingXray}
+                  />
+                </label>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Drag & Drop Zone */}
+          {!isFinalized && (
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDraggingOver(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setIsDraggingOver(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingOver(false);
+                if (e.dataTransfer.files) {
+                  uploadXrayFiles(e.dataTransfer.files);
+                }
+              }}
+              className={`border-2 border-dashed rounded-xl p-4 text-center transition-all ${
+                isDraggingOver
+                  ? "border-cyan-500 bg-cyan-50/40 text-cyan-900 scale-[1.005]"
+                  : "border-slate-300 hover:border-slate-400 bg-slate-50/50 text-slate-600"
+              }`}
+            >
+              <div className="flex flex-col items-center justify-center space-y-1.5">
+                <div className="w-9 h-9 rounded-full bg-slate-200/80 text-slate-600 flex items-center justify-center">
+                  <Film className="w-5 h-5 text-slate-700" />
+                </div>
+                <div className="text-xs">
+                  <span className="font-semibold text-slate-800">Drag & drop X-Ray films here</span> or{" "}
+                  <label className="text-cyan-600 hover:underline cursor-pointer font-semibold">
+                    browse files
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files) uploadXrayFiles(e.target.files);
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Tagging current uploads as: <strong className="text-slate-700 font-mono">[{selectedProjection}]</strong> • Formats: PNG, JPEG, WebP, DICOM snapshots (up to 25MB each)
+                </p>
+                {isUploadingXray && (
+                  <div className="pt-1 flex items-center gap-2 text-xs text-cyan-700 font-semibold animate-pulse">
+                    <LoadingSpinner size="sm" />
+                    <span>Processing and securing X-Ray plates...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Attached X-Ray Films Grid */}
+          {report.attachments && report.attachments.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
+                Attached Radiographic Plates ({report.attachments.length}):
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {report.attachments.map((att) => (
+                  <div
+                    key={att.id}
+                    className="relative group bg-slate-950 border border-slate-800 hover:border-cyan-400 rounded-lg p-2 text-white shadow-md transition-all flex flex-col justify-between"
+                  >
+                    {!isFinalized && (
+                      <button
+                        onClick={() => handleDeleteAttachment(att.id)}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center shadow-lg z-10"
+                        title="Remove X-Ray plate"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+
+                    <div
+                      onClick={() => openXrayViewer(att)}
+                      className="cursor-pointer relative h-28 bg-black rounded overflow-hidden flex items-center justify-center mb-1.5 group-hover:ring-1 group-hover:ring-cyan-400 transition-all"
+                    >
+                      {att.file_data?.startsWith("data:image") ? (
+                        <img
+                          src={att.file_data}
+                          alt={att.file_name}
+                          className="max-h-full max-w-full object-contain filter contrast-125 group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <Film className="w-8 h-8 text-slate-600" />
+                      )}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 transition-opacity">
+                        <span className="text-[10px] bg-cyan-600 text-white px-2 py-0.5 rounded font-bold flex items-center gap-1 shadow">
+                          <Eye className="w-3 h-3" /> Inspect Film
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] font-semibold text-cyan-300 truncate" title={att.caption || att.file_name}>
+                        {att.caption || att.file_name}
+                      </p>
+                      <div className="flex items-center justify-between text-[9px] text-slate-400">
+                        <span className="truncate max-w-[80px]">{att.file_name}</span>
+                        <span>
+                          {att.file_size ? `${Math.round(att.file_size / 1024)} KB` : "Image"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Case Tests Table (Matching lower table in Patient_Report.png) */}
         {caseReports.length > 0 && (
@@ -718,15 +917,79 @@ export const PatientReportEditorPage: React.FC = () => {
           <div className="space-y-1 text-xs max-h-[580px] overflow-y-auto pr-1">
             {TEMPLATE_HIERARCHY.map((category) => {
               const isCatExpanded = Boolean(expandedNodes[category.id]);
+              const isRadiographCat = category.id === "radiograph";
+              const xrayCount = report?.attachments?.length || 0;
+
               return (
                 <div key={category.id} className="space-y-1">
-                  <button
-                    onClick={() => toggleNode(category.id)}
-                    className="w-full flex items-center space-x-1.5 font-bold text-slate-900 hover:text-blue-700 py-1 px-1.5 rounded hover:bg-slate-50 transition-colors"
-                  >
-                    {isCatExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                    <span>{category.label}</span>
-                  </button>
+                  <div className="flex items-center justify-between w-full pr-1">
+                    <button
+                      onClick={() => toggleNode(category.id)}
+                      className="flex items-center space-x-1.5 font-bold text-slate-900 hover:text-blue-700 py-1 px-1.5 rounded hover:bg-slate-50 transition-colors flex-1 text-left"
+                    >
+                      {isCatExpanded ? <ChevronDown className="w-3.5 h-3.5 text-slate-500" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-500" />}
+                      {isRadiographCat ? (
+                        <Film className="w-3.5 h-3.5 text-cyan-600 shrink-0" />
+                      ) : null}
+                      <span>{category.label}</span>
+                      {isRadiographCat && xrayCount > 0 && (
+                        <span className="text-[10px] bg-cyan-100 text-cyan-800 px-1.5 py-0.2 rounded-full font-mono font-bold">
+                          {xrayCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {isRadiographCat && !isFinalized && (
+                      <label
+                        title="Upload X-Ray Plate"
+                        className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-50 hover:bg-cyan-100 text-cyan-700 text-[10px] font-semibold border border-cyan-200 transition-colors shrink-0 shadow-xs"
+                      >
+                        <Upload className="w-2.5 h-2.5" />
+                        <span>+ Upload</span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files) uploadXrayFiles(e.target.files);
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Radiograph Quick Film Preview in Tree */}
+                  {isRadiographCat && isCatExpanded && report?.attachments && report.attachments.length > 0 && (
+                    <div className="mx-2 mb-2 p-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 space-y-1.5 shadow-xs">
+                      <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400">
+                        <span className="flex items-center gap-1">
+                          <Film className="w-3 h-3 text-cyan-400" />
+                          Attached Films ({report.attachments.length})
+                        </span>
+                        <span className="text-[9px] text-slate-500">Click to inspect</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5 pt-1">
+                        {report.attachments.slice(0, 6).map((att) => (
+                          <div
+                            key={att.id}
+                            onClick={() => openXrayViewer(att)}
+                            className="cursor-pointer group relative bg-black rounded border border-slate-800 hover:border-cyan-400 overflow-hidden aspect-square flex items-center justify-center p-0.5 transition-all"
+                            title={`${att.caption || att.file_name} - Click to inspect film`}
+                          >
+                            {att.file_data?.startsWith("data:image") ? (
+                              <img src={att.file_data} alt={att.file_name} className="w-full h-full object-contain filter contrast-125" />
+                            ) : (
+                              <Film className="w-4 h-4 text-slate-500" />
+                            )}
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <Eye className="w-3.5 h-3.5 text-cyan-300" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {isCatExpanded && category.children && (
                     <div className="pl-4 space-y-1 border-l-2 border-slate-100 ml-2">
@@ -999,6 +1262,164 @@ export const PatientReportEditorPage: React.FC = () => {
             </form>
           </div>
         </Dialog>
+      )}
+
+      {/* Interactive Fullscreen Darkroom X-Ray Lightbox Viewer Modal */}
+      {selectedXrayForView && (
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between backdrop-blur-md text-white animate-in fade-in duration-200">
+          {/* Top Control Bar */}
+          <div className="bg-slate-900/90 border-b border-slate-800 px-5 py-3 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-500/40 text-cyan-400 flex items-center justify-center">
+                <Film className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-cyan-300">
+                  {selectedXrayForView.caption || selectedXrayForView.file_name}
+                </h3>
+                <p className="text-[11px] text-slate-400 font-mono">
+                  Report: {report?.report_number} • Patient: {report?.patient_name} ({report?.patient_uhid})
+                </p>
+              </div>
+            </div>
+
+            {/* Lightbox Tools */}
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setXrayZoom((prev) => Math.max(0.5, prev - 0.25))}
+                  className="p-1.5 hover:bg-slate-700 rounded text-slate-300 hover:text-white"
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <span className="px-2 font-mono text-cyan-400 font-bold min-w-[50px] text-center">
+                  {Math.round(xrayZoom * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setXrayZoom((prev) => Math.min(4, prev + 0.25))}
+                  className="p-1.5 hover:bg-slate-700 rounded text-slate-300 hover:text-white"
+                  title="Zoom In"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setXrayRotation((prev) => (prev + 90) % 360)}
+                className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium"
+                title="Rotate 90 degrees"
+              >
+                <RotateCw className="w-3.5 h-3.5" />
+                <span>Rotate ({xrayRotation}°)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setXrayInvert((prev) => !prev)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
+                  xrayInvert
+                    ? "bg-amber-500/20 text-amber-300 border-amber-500/50"
+                    : "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
+                }`}
+                title="Invert negative/positive radiograph film contrast"
+              >
+                <Contrast className="w-3.5 h-3.5" />
+                <span>{xrayInvert ? "Film: Positive" : "Film: Negative"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setXrayZoom(1);
+                  setXrayRotation(0);
+                  setXrayInvert(false);
+                }}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs"
+              >
+                Reset
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedXrayForView(null)}
+                className="p-1.5 bg-slate-800 hover:bg-rose-900/80 hover:text-rose-200 text-slate-400 rounded-lg border border-slate-700 transition-colors ml-2"
+                title="Close viewer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Central Diagnostic Viewport */}
+          <div className="flex-1 overflow-hidden relative flex items-center justify-center p-6 bg-black select-none">
+            {selectedXrayForView.file_data?.startsWith("data:image") ? (
+              <img
+                src={selectedXrayForView.file_data}
+                alt={selectedXrayForView.file_name}
+                style={{
+                  transform: `scale(${xrayZoom}) rotate(${xrayRotation}deg)`,
+                  filter: xrayInvert ? "invert(1) hue-rotate(180deg)" : "none",
+                  transition: "transform 0.15s ease-out",
+                }}
+                className="max-h-[75vh] max-w-[85vw] object-contain shadow-2xl cursor-grab active:cursor-grabbing"
+              />
+            ) : (
+              <div className="text-center space-y-2">
+                <Film className="w-16 h-16 text-slate-700 mx-auto" />
+                <p className="text-slate-400 text-xs">Radiological plate data preview unavailable</p>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Diagnostics Bar */}
+          <div className="bg-slate-900/90 border-t border-slate-800 px-5 py-2.5 flex items-center justify-between text-xs text-slate-400">
+            <div className="flex items-center space-x-4">
+              <span>
+                File: <strong className="text-slate-200">{selectedXrayForView.file_name}</strong>
+              </span>
+              <span>
+                Size:{" "}
+                <strong className="text-slate-200">
+                  {selectedXrayForView.file_size
+                    ? `${(selectedXrayForView.file_size / (1024 * 1024)).toFixed(2)} MB`
+                    : "Standard"}
+                </strong>
+              </span>
+              <span>
+                Uploaded:{" "}
+                <strong className="text-slate-200">
+                  {new Date(selectedXrayForView.created_at).toLocaleString("en-IN", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </strong>
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              {!isFinalized && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDeleteAttachment(selectedXrayForView.id);
+                    setSelectedXrayForView(null);
+                  }}
+                  className="text-rose-400 hover:text-rose-300 flex items-center gap-1 font-semibold"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Remove Plate
+                </button>
+              )}
+              <span className="text-[10px] text-slate-500">
+                Diagnostic Viewport: Calibrated for clinical radiological assessment.
+              </span>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

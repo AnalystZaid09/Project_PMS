@@ -13,6 +13,7 @@ import {
   Lock,
   PlusCircle,
   FileSpreadsheet,
+  Film,
 } from "lucide-react";
 import { apiClient } from "@/lib/api";
 import { ClinicalReportListItem, ClinicalReportsStats, DepartmentItem } from "@/types";
@@ -345,7 +346,16 @@ export const ClinicalReportsListPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-2.5 px-3">
-                      <div className="font-medium text-slate-900">{r.investigation_name}</div>
+                      <div className="font-medium text-slate-900 flex items-center gap-1.5">
+                        <span>{r.investigation_name}</span>
+                        {(r.investigation_name.toLowerCase().includes("x-ray") ||
+                          r.investigation_name.toLowerCase().includes("radiograph") ||
+                          (r.department_name && r.department_name.toLowerCase().includes("radiology"))) && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-cyan-50 text-cyan-700 border border-cyan-200">
+                            <Film className="w-2.5 h-2.5" /> X-Ray
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] text-slate-400 font-mono">{r.investigation_code}</div>
                     </td>
                     <td className="py-2.5 px-3 text-slate-600">{r.department_name || "-"}</td>
