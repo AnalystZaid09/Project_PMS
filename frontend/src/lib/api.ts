@@ -42,6 +42,11 @@ apiClient.interceptors.request.use(
       config.url = config.url.replace("apex-pms-backend.onrender.com", "project-pms.onrender.com");
     }
 
+    // Rewrite /masters/<path> to /<path> for universal compatibility across backend versions
+    if (config.url && config.url.startsWith("/masters/")) {
+      config.url = config.url.replace(/^\/masters\//, "/");
+    }
+
     const token = localStorage.getItem("pms_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
